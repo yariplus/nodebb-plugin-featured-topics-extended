@@ -1,0 +1,35 @@
+{
+	"id": "nodebb-plugin-featured-topics-extended",
+	"name": "Featured Topics Extended",
+	"description": "Adds a customisable news/blog page and some widgets using featured topics.",
+	"library": "./library.js",
+	"hooks": [
+		{ "hook": "static:app.load",                "method": "init"        },
+		{ "hook": "filter:homepage.get",            "method": "homepageGet" },
+		{ "hook": "action:homepage.get:news",       "method": "newsRender"  },
+		{ "hook": "filter:admin.header.build",      "method": "adminBuild"  },
+		{ "hook": "filter:navigation.available",    "method": "addNavs"     },
+		{ "hook": "filter:widgets.getAreas",        "method": "getAreas"    },
+		{ "hook": "filter:widgets.getWidgets",      "method": "getWidgets"  },
+		{ "hook": "filter:widget.render:featuredTopicsExBlocks",  "method": "renderFeaturedTopicsBlocks"  },
+		{ "hook": "filter:widget.render:featuredTopicsExSidebar", "method": "renderFeaturedTopicsSidebar" },
+		{ "hook": "filter:widget.render:featuredTopicsExCards",   "method": "renderFeaturedTopicsCards"   },
+		{ "hook": "filter:widget.render:featuredTopicsExList",    "method": "renderFeaturedTopicsList"    },
+		{ "hook": "filter:topic.thread_tools", "method": "addThreadTools" },
+		{ "hook": "action:topic.post", "method": "topicPost" }
+	],
+	"staticDirs": {
+		"public": "public"
+	},
+	"templates": "./public/templates",
+	"less": [
+		"./public/less/style.less"
+	],
+	"scripts": [
+		"../../public/vendor/jquery/js/jquery-ui-1.10.4.custom.js",
+		"./public/js/script.js"
+	],
+	"acpScripts": [
+		"./public/js/script.js"
+	]
+}

@@ -1,0 +1,41 @@
+{
+	"name": "nodebb-plugin-featured-topics-extended",
+	"version": "0.1.0",
+	"description": "Adds a customisable news/blog page and some widgets using featured topics.",
+	"main": "library.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended"
+	},
+	"keywords": [
+		"nodebb",
+		"plugin",
+		"news",
+		"portal",
+		"featured",
+		"topics"
+	],
+	"author": {
+		"name": "yariplus",
+		"email": "tafike@gmail.com"
+	},
+	"license": "(CC0-1.0 OR MIT)",
+	"bugs": {
+		"url": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended/issues"
+	},
+	"readme": "",
+	"readmeFilename": "README.md",
+	"dependencies": {
+		"async": "~1.5.0",
+		"nconf": "~0.8.2",
+		"templates.js": "0.3.3",
+		"winston": "^2.1.0"
+	},
+	"nbbpm": {
+		"compatibility": "^1.0.0"
+	},
+	"homepage": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended"
+}

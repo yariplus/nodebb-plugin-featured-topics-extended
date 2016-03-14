@@ -1,0 +1,396 @@
+"use strict";
+
+var NodeBB     = module.parent;
+
+var categories = NodeBB.require("./categories");
+var topics     = NodeBB.require("./topics");
+var db         = NodeBB.require('./database.js');
+var translator = NodeBB.require('../public/src/modules/translator');
+
+var Settings   = NodeBB.require("./settings");
+
+var SocketTopics = NodeBB.require('./socket.io/topics');
+var SocketAdmin  = NodeBB.require('./socket.io/admin');
+
+var nconf   = require('nconf');
+var async   = require('async');
+var winston = require('winston');
+var tjs     = require('templates.js');
+
+var Plugin = module.exports;
+
+var defaultSettings = {
+	newsTemplate   : "porta",
+	customTemplate : "",
+	autoFeature    : "1"
+};
+
+var app, settings, autoFeature;
+
+// Get featured topics, possibly adding a new one.
+function getFeaturedTopics(uid, data, cb) {
+	data = data || {};
+
+	db.getSortedSetRangeByScore('featuredex:tids', 0, -1, '-inf', '+inf', function(err, tids) {
+		if (data.tid) {
+			if (tids.indexOf(data.tid) === -1) {
+				db.sortedSetAdd('featuredex:tids', 0, data.tid, function(){});
+				tids.unshift(data.tid);
+			}
+		}
+
+		topics.getTopicsByTids(tids, uid, function (err, topics) {
+			if (err) return cb(err, topics);
+
+			// Templates customisation.
+			// TODO
+			cb(err, topics);
+		});
+	});
+}
+
+function setFeaturedTopics(data, cb) {
+	db.delete('featuredex:tids', function (err) {
+		var scores = [];
+		var values = [];
+		data.tids.forEach(function (tid, i) {
+			scores.push(i);
+			values.push(tid);
+		});
+
+		db.sortedSetAdd('featuredex:tids', scores, values, cb);
+	});
+}
+
+// Setup routes.
+Plugin.init = function (params, next) {
+
+	app = params.app;
+	settings = new Settings('featured-topics-extended', '1.0.0', defaultSettings, readSettings);
+
+	var router     = params.router;
+	var middleware = params.middleware;
+
+	router.get('/news',           middleware.buildHeader, render);
+	router.get('/news/:page',     middleware.buildHeader, render);
+	router.get('/api/news',       render);
+	router.get('/api/news/:page', render);
+
+	router.get('/admin/plugins/featured-topics-extended', middleware.admin.buildHeader, renderAdmin);
+	router.get('/api/admin/plugins/featured-topics-extended', renderAdmin);
+
+	function renderAdmin(req, res, next) {
+		res.render('admin/plugins/featured-topics-extended', {});
+	}
+
+	SocketAdmin.settings.syncFeaturedTopicsExtended = function () {
+		settings.sync(readSettings);
+	};
+
+	SocketAdmin.getFeaturedTopics = function(socket, data, callback) {
+		getFeaturedTopics(socket.uid, data, callback);
+	};
+
+	SocketAdmin.setFeaturedTopics = function(socket, data, next) {
+		setFeaturedTopics(data, next);
+	};
+
+	function readSettings() {
+		autoFeature = settings.get('autoFeature').split(',').map(function(cid){
+			return parseInt(cid, 10) || 0;
+		});
+		console.log(autoFeature);
+	}
+
+	next();
+};
+
+// Add the news page as a selectable Homepage.
+Plugin.homepageGet = function (data, next) {
+	data.routes.push({
+		route: 'news',
+		name: 'News'
+	});
+
+	next(null, data);
+};
+
+// Add a widget area for the news page.
+Plugin.getAreas = function (areas, cb) {
+	areas = areas.concat([
+		{
+			name     : 'News Header',
+			template : 'news.tpl',
+			location : 'header'
+		},
+		{
+			name     : 'News Sidebar',
+			template : 'news.tpl',
+			location : 'sidebar'
+		},
+		{
+			name     : 'News Left Sidebar',
+			template : 'news.tpl',
+			location : 'leftsidebar'
+		},
+		{
+			name     : 'News Footer',
+			template : 'news.tpl',
+			location : 'footer'
+		}
+	]);
+
+	cb(null, areas);
+};
+
+// Pass hook data to the render function.
+Plugin.newsRender = function (data) {
+	render(data.req, data.res, data.next);
+};
+
+//
+Plugin.addNavs = function (items, cb) {
+	items.push({
+		route     : "/news",
+		title     : "News",
+		enabled   : false,
+		iconClass : "fa-newspaper-o",
+		textClass : "visible-xs-inline",
+		text      : "News"
+	});
+	cb(null, items);
+};
+
+//
+Plugin.adminBuild = function (header, cb) {
+	header.plugins.push({
+		route : '/plugins/featured-topics-extended',
+		icon  : 'fa-newspaper-o',
+		name  : 'Featured Topics Extended'
+	});
+	cb(null, header);
+};
+
+Plugin.addThreadTools = function(data, callback) {
+	data.tools.push({
+		"title": "Feature this Topic",
+		"class": "mark-featured",
+		"icon": "fa-star"
+	});
+
+	callback(null, data);
+};
+
+Plugin.getWidgets = function(widgets, callback) {
+	widgets = widgets.concat([
+		{
+			widget: "featuredTopicsExSidebar",
+			name: "Featured Topics Sidebar",
+			description: "Featured topics as a sidebar widget.",
+			content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+		},
+		{
+			widget: "featuredTopicsExBlocks",
+			name: "Featured Topics Blocks",
+			description: "Featured topics as Lavender-style blocks.",
+			content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+		},
+		{
+			widget: "featuredTopicsExCards",
+			name: "Featured Topics Cards",
+			description: "Featured topics as Persona-style topic cards.",
+			content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+		},
+		{
+			widget: "featuredTopicsExList",
+			name: "Featured Topics List",
+			description: "Featured topics as a normal topic list.",
+			content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+		}
+	]);
+
+	callback(null, widgets);
+};
+
+Plugin.renderFeaturedTopicsSidebar = function(widget, callback) {
+	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
+		app.render('widgets/featured-topics-ex-sidebar', {topics:featuredTopics}, callback);
+	});
+};
+
+Plugin.renderFeaturedTopicsBlocks = function(widget, callback) {
+	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
+		async.each(featuredTopics, function(topic, next) {
+			topics.getTopicPosts(topic.tid, 'tid:' + topic.tid + ':posts', 0, 4, widget.uid, true, function(err, posts) {
+				topic.posts = posts;
+				next(err);
+			});
+		}, function(err) {
+			app.render('widgets/featured-topics-ex-blocks', {topics:featuredTopics}, callback);
+		});
+
+	});
+};
+
+Plugin.renderFeaturedTopicsCards = function(widget, callback) {
+	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
+		async.each(featuredTopics, function(topic, next) {
+			topics.getTopicPosts(topic.tid, 'tid:' + topic.tid + ':posts', 0, 4, widget.uid, true, function(err, posts) {
+				topic.posts = posts;
+				next(err);
+			});
+		}, function(err) {
+			app.render('widgets/featured-topics-ex-cards', {topics:featuredTopics}, callback);
+		});
+
+	});
+};
+
+Plugin.renderFeaturedTopicsList = function(widget, callback) {
+	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
+		async.each(featuredTopics, function(topic, next) {
+			topics.getTopicPosts(topic.tid, 'tid:' + topic.tid + ':posts', 0, 4, widget.uid, true, function(err, posts) {
+				topic.posts = posts;
+				next(err);
+			});
+		}, function(err) {
+			app.render('widgets/featured-topics-ex-list', {topics:featuredTopics}, function(err, html) {
+				translator.translate(html, function(translatedHTML) {
+					callback(err, translatedHTML);
+				});
+			});
+		});
+
+	});
+};
+
+Plugin.renderFeaturedTopicsNews = function(widget, callback) {
+	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
+		app.render('news', {}, function(err, html) {
+			translator.translate(html, function(translatedHTML) {
+				callback(err, translatedHTML);
+			});
+		});
+	});
+};
+
+Plugin.topicPost = function (topicData) {
+	if (autoFeature.indexOf(parseInt(topicData.cid, 10)) !== -1) {
+		getFeaturedTopics(-1, {tid: topicData.tid}, function (err, topicsData) {
+			if (err) return;
+			var tids = topicsData.map(function(topic){return topic.tid});
+			setFeaturedTopics({tids: tids}, function(){});
+		});
+	}
+};
+
+// Date parsing helper.
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+var days   = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function getDate(timestamp){
+	var date = new Date(parseInt(timestamp, 10)),
+		hours = date.getHours();
+	date = {
+		full  : months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear(),
+		year  : date.getFullYear(),
+		month : months[date.getMonth()],
+		date  : date.getDate(),
+		day   : days[date.getDay()],
+		mer   : hours >= 12 ? 'PM' : 'AM',
+		hour  : hours === 0 ? 12 : (hours > 12 ? hours - 12 : hours),
+		min   : date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes(),
+		sec   : date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds()
+	};
+	date.start = (Date.now() - parseInt(timestamp, 10))/1000 < 604800 ? date.day + " at " + date.hour + ":" + date.min + " " + date.mer : date.full;
+	return date;
+}
+
+// Render the news.
+function render(req, res, next) {
+
+	var	payload = {},
+		topicsPerPage = 5,
+		topicIndex = 0;
+
+	async.waterfall([
+		async.apply(getFeaturedTopics, req.uid, {}),
+		function (topicsData, next) {
+			topicsData = topicsData.filter(function (topic) {
+				return !topic.deleted;
+			});
+
+			var topicCount  = topicsData.length;
+			var pageCount   = Math.max(1, Math.ceil(topicCount / topicsPerPage));
+			var currentPage = parseInt(req.params.page, 10) || 1;
+
+			if (currentPage < 1 || currentPage > pageCount) {
+				currentPage = 1;
+			}
+
+			payload.nextpage = currentPage === pageCount ? false : currentPage + 1;
+			payload.prevpage = currentPage === 1 ? false : currentPage - 1;
+
+			payload.pages = [];
+			for (var number = 1; number <= pageCount; number++) {
+				var _page = {number: number};
+				if (number === currentPage) _page.currentPage = true;
+				payload.pages.push(_page);
+			}
+
+			payload.topics = [];
+
+			var tids = [];
+			for (var i = 0; i < topicsPerPage; i++) {
+				var x = (currentPage - 1)*5+i;
+				if (topicsData[x]) {
+					payload.topics.push(topicsData[x]);
+					tids.push(topicsData[x].tid);
+				}
+			}
+
+			if (currentPage === 1 && topicsData[0]) {
+				topics.increaseViewCount(topicsData[0].tid);
+			}
+
+			next(null, tids, req.uid);
+		},
+		async.apply(topics.getMainPosts),
+		function (posts, next) {
+
+			for (var i = 0; i < payload.topics.length; i++) {
+				payload.topics[i].post = posts[i];
+				payload.topics[i].date = getDate(payload.topics[i].timestamp);
+				payload.topics[i].postcount = payload.topics[i].postcount - 1;
+			}
+
+			payload.topics.sort(function compare(a, b) {
+				if (a.timestamp > b.timestamp) {
+					return -1;
+				}
+				if (a.timestamp < b.timestamp) {
+					return 1;
+				}
+				return 0;
+			});
+			next();
+
+		}
+	], function (err) {
+		if (err) winston.error("Error parsing news page:", err ? (err.message || err) : 'null');
+
+		var template = settings.get('newsTemplate') || defaultSettings['newsTemplate'];
+
+		if (template !== 'custom') {
+			app.render('news-' + template, payload, function(err, html) {
+				translator.translate(html, function(translatedHTML) {
+					res.render('news', {newsTemplate: translatedHTML});
+				});
+			});
+		}else{
+			var parsed = tjs.parse(settings.get('customTemplate'), payload);
+			translator.translate(parsed, function(translatedHTML) {
+				res.render('news', {newsTemplate: translatedHTML});
+			});
+		}
+	});
+}
