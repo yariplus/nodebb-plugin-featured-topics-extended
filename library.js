@@ -31,7 +31,7 @@ var app, settings, autoFeature;
 function getFeaturedTopics(uid, data, cb) {
 	data = data || {};
 
-	db.getSortedSetRangeByScore('featuredex:tids', 0, -1, '-inf', '+inf', function(err, tids) {
+	db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, function(err, tids) {
 		if (data.tid) {
 			if (tids.indexOf(data.tid) === -1) {
 				db.sortedSetAdd('featuredex:tids', 0, data.tid, function(){});
