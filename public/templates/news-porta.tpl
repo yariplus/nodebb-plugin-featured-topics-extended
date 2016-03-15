@@ -53,6 +53,9 @@
 
 	</div>
 </div>
+<!-- IF !@last -->
+<div widget-area="contentbetween"></div>
+<!-- ENDIF !@last -->
 <!-- END topics -->
 
 <div class="section sectionMain">

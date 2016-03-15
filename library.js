@@ -138,6 +138,21 @@ Plugin.getAreas = function (areas, cb) {
 			name     : 'News Footer',
 			template : 'news.tpl',
 			location : 'footer'
+		},
+		{
+			name     : 'News Content Top',
+			template : 'news.tpl',
+			location : 'contenttop'
+		},
+		{
+			name     : 'News Content Bottom',
+			template : 'news.tpl',
+			location : 'contentbottom'
+		},
+		{
+			name     : 'News Content Between',
+			template : 'news.tpl',
+			location : 'contentbetween'
 		}
 	]);
 
