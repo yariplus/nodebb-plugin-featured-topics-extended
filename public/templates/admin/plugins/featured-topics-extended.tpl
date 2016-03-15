@@ -14,6 +14,12 @@
 	<div class="panel panel-primary">
 		<div class="panel-heading"><span class="panel-title">News Page</span></div>
 		<div class="panel-body">
+			<div class="checkbox">
+				<label for="newsHideAnon">
+					<input data-key="newsHideAnon" id="newsHideAnon" type="checkbox">
+					Hide news from guests.
+				</label>
+			</div>
 			<div class="form-group">
 				<label for="newsTemplate">Template</label>
 				<select data-key="newsTemplate" name="newsTemplate" class="form-control">

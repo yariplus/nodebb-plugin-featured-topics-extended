@@ -20,9 +20,10 @@ var tjs     = require('templates.js');
 var Plugin = module.exports;
 
 var defaultSettings = {
-	newsTemplate   : "porta",
-	customTemplate : "",
-	autoFeature    : "1"
+	newsTemplate     : "porta",
+	newsHideAnon     : 0,
+	customTemplate   : "",
+	autoFeature      : "1"
 };
 
 var app, settings, autoFeature;
@@ -307,6 +308,8 @@ function getDate(timestamp){
 
 // Render the news.
 function render(req, res, next) {
+
+	if (!req.uid && settings.get('newsHideAnon')) return res.render('news', {newsTemplate: ''});
 
 	var	payload = {},
 		topicsPerPage = 5,
