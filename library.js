@@ -6,13 +6,13 @@ var categories = NodeBB.require("./categories");
 var topics     = NodeBB.require("./topics");
 var db         = NodeBB.require('./database.js');
 var translator = NodeBB.require('../public/src/modules/translator');
+var nconf      = NodeBB.require('nconf');
 
 var Settings   = NodeBB.require("./settings");
 
 var SocketTopics = NodeBB.require('./socket.io/topics');
 var SocketAdmin  = NodeBB.require('./socket.io/admin');
 
-var nconf   = require('nconf');
 var async   = require('async');
 var winston = require('winston');
 var tjs     = require('templates.js');
@@ -308,12 +308,11 @@ function getDate(timestamp){
 
 // Render the news.
 function render(req, res, next) {
+	var payload       = {config: {relative_path: nconf.get('relative_path')}, newsTemplate: ''};
+	var topicsPerPage = 5;
+	var topicIndex    = 0;
 
-	if (!req.uid && settings.get('newsHideAnon')) return res.render('news', {newsTemplate: ''});
-
-	var	payload = {},
-		topicsPerPage = 5,
-		topicIndex = 0;
+	if (!req.uid && settings.get('newsHideAnon')) return res.render('news', payload);
 
 	async.waterfall([
 		async.apply(getFeaturedTopics, req.uid, {}),
