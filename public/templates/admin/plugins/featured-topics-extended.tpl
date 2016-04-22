@@ -24,6 +24,7 @@
 				<label for="newsTemplate">Template</label>
 				<select data-key="newsTemplate" name="newsTemplate" class="form-control">
 					<option value="porta" selected="selected">Porta</option>
+					<option value="Scout">Scout</option>
 					<option value="custom">Custom</option>
 				</select>
 			</div>
@@ -46,16 +47,16 @@
 <script>
 require(['settings'], function(settings) {
 
-	var templateEditor = ace.edit("template-editor");
-	templateEditor.setTheme("ace/theme/twilight");
-	templateEditor.getSession().setMode("ace/mode/html");
-	templateEditor.setValue($('[data-key="customTemplate"]').val());
+	settings.sync('featured-topics-extended', $('#featured-topics-extended'), function () {
+		var templateEditor = ace.edit("template-editor");
+		templateEditor.setTheme("ace/theme/twilight");
+		templateEditor.getSession().setMode("ace/mode/html");
+		templateEditor.setValue($('[data-key="customTemplate"]').val());
 
-	templateEditor.on('change', function(e) {
-		$('[data-key="customTemplate"]').val(templateEditor.getValue());
+		templateEditor.on('change', function(e) {
+			$('[data-key="customTemplate"]').val(templateEditor.getValue());
+		});
 	});
-
-	settings.sync('featured-topics-extended', $('#featured-topics-extended'));
 
 	$('#save').click( function (event) {
 		settings.persist('featured-topics-extended', $('#featured-topics-extended'), function(){

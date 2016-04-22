@@ -406,6 +406,8 @@ function render(req, res, next) {
 		}else{
 			var parsed = tjs.parse(settings.get('customTemplate'), payload);
 			translator.translate(parsed, function(translatedHTML) {
+				translatedHTML = translatedHTML.replace('&#123;', '{').replace('&#125;', '}');
+				console.log(translatedHTML);
 				res.render('news', {newsTemplate: translatedHTML});
 			});
 		}
