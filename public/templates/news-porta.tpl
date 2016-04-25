@@ -16,14 +16,18 @@
 
 		<div class="messageUserBlock">
 			<div class="avatarHolder">
-				<a href="<!-- IF topics.user.userslug -->{config.relative_path}/user/{topics.user.userslug}<!-- ELSE -->#<!-- ENDIF topics.user.userslug -->">
+				<!-- IF topics.thumb -->
+				<img src="{topics.thumb}" align="left" itemprop="image" />
+				<!-- ELSE -->
+					<a href="<!-- IF topics.user.userslug -->{config.relative_path}/user/{topics.user.userslug}<!-- ELSE -->#<!-- ENDIF topics.user.userslug -->">
 					<!-- IF topics.user.picture -->
 					<img component="user/picture" data-uid="{topics.user.uid}" src="{topics.user.picture}" align="left" itemprop="image" />
 					<!-- ELSE -->
 					<div component="user/picture" data-uid="{topics.user.uid}" class="user-icon" style="background-color: {topics.user.icon:bgColor};">{topics.user.icon:text}</div>
 					<!-- ENDIF topics.user.picture -->
 					<i component="user/status" class="fa fa-circle status {topics.user.status}" title="[[global:{topics.user.status}]]"></i>
-				</a>
+					</a>
+				<!-- ENDIF topics.thumb -->
 			</div>
 		</div>
 
