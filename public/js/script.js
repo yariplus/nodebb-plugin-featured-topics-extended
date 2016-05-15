@@ -31,5 +31,7 @@ $(function(){
 		}else if (data.url.match(/^admin\/plugins\/featured-topics-extended/)) {
 			$('#resort').on('click', openModal);
 		}
+
+		$('.category-box').hover(function(){ $(this).prev().children().first().css('filter', 'brightness(115%)'); console.log('in'); }, function(){ $(this).prev().children().first().css('filter', ''); console.log('out'); });
 	});
 });

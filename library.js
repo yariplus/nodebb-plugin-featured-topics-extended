@@ -198,7 +198,7 @@ Plugin.addThreadTools = function(data, callback) {
 };
 
 Plugin.getWidgets = function(widgets, callback) {
-	widgets = widgets.concat([
+	var _widgets = [
 		{
 			widget: "featuredTopicsExSidebar",
 			name: "Featured Topics Sidebar",
@@ -215,7 +215,7 @@ Plugin.getWidgets = function(widgets, callback) {
 			widget: "featuredTopicsExCards",
 			name: "Featured Topics Cards",
 			description: "Featured topics as Persona-style topic cards.",
-			content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+			content: "admin/widgets/featured-topics-ex-cards.tpl"
 		},
 		{
 			widget: "featuredTopicsExList",
@@ -223,9 +223,20 @@ Plugin.getWidgets = function(widgets, callback) {
 			description: "Featured topics as a normal topic list.",
 			content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
 		}
-	]);
+	];
 
-	callback(null, widgets);
+	async.each(_widgets, function (widget, next) {
+		if (!widget.content.match('tpl')) return next();
+		app.render(widget.content, {}, function (err, content) {
+			translator.translate(content, function (content) {
+				widget.content = content;
+				next();
+			});
+		});
+	}, function (err) {
+		widgets = widgets.concat(_widgets);
+		callback(null, widgets);
+	});
 };
 
 Plugin.renderFeaturedTopicsSidebar = function(widget, callback) {
@@ -256,7 +267,12 @@ Plugin.renderFeaturedTopicsCards = function(widget, callback) {
 				next(err);
 			});
 		}, function(err) {
-			app.render('widgets/featured-topics-ex-cards', {topics:featuredTopics}, callback);
+			widget.data.topics = featuredTopics;
+			widget.data.backgroundSize = widget.data.backgroundSize || 'cover';
+			widget.data.backgroundPosition = widget.data.backgroundPosition || 'center';
+			widget.data.backgroundOpacity = widget.data.backgroundOpacity || '1.0';
+			widget.data.textShadow = widget.data.textShadow || 'none';
+			app.render('widgets/featured-topics-ex-cards', widget.data, callback);
 		});
 
 	});

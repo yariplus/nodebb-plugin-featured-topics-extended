@@ -3,14 +3,19 @@
 	<div component="categories/category" class="<!-- IF topics.category.class -->{topics.category.class}<!-- ELSE -->col-md-3 col-sm-6 col-xs-12<!-- ENDIF topics.category.class --> category-item" data-cid="{topics.category.cid}" data-numRecentReplies="{topics.category.numRecentReplies}">
 		<meta itemprop="name" content="{topics.category.name}">
 
-		<div class="category-icon">
+		<div class="category-icon" style="text-shadow:{textShadow};">
 			<a style="color: {topics.category.color};" href="{config.relative_path}/topic/{topics.slug}" itemprop="url">
 				<div
 					id="category-{topics.category.cid}" class="category-header category-header-image-{topics.category.imageClass}"
 					style="
-						<!-- IF topics.category.backgroundImage -->background-image: url({topics.category.backgroundImage});<!-- ENDIF topics.category.backgroundImage -->
-						<!-- IF topics.category.bgColor -->background-color: {topics.category.bgColor};<!-- ENDIF topics.category.bgColor -->
+						background-size: {backgroundSize};
+						background-position: {backgroundPosition};
 						color: {topics.category.color};
+						opacity: {backgroundOpacity};
+						<!-- IF topics.thumb -->background-image: url({topics.thumb});<!-- ELSE -->
+							<!-- IF topics.category.backgroundImage -->background-image: url({topics.category.backgroundImage});<!-- ENDIF topics.category.backgroundImage -->
+						<!-- ENDIF topics.thumb -->
+						<!-- IF topics.category.bgColor -->background-color: {topics.category.bgColor};<!-- ENDIF topics.category.bgColor -->
 					"
 				>
 					<!-- IF topics.category.icon -->
