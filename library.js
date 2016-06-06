@@ -239,11 +239,22 @@ Plugin.getWidgets = function(widgets, callback) {
 	});
 };
 
+function getTemplateData(uid, done) {
+  var templateData = {
+    relative_path: nconf.get('relative_path')
+  }
+
+  getFeaturedTopics(uid, null, function(err, featuredTopics) {
+    templateData.topics = featuredTopics
+    done(null, templateData)
+  })
+}
+
 Plugin.renderFeaturedTopicsSidebar = function(widget, callback) {
-	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
-		app.render('widgets/featured-topics-ex-sidebar', {topics:featuredTopics}, callback);
-	});
-};
+  getTemplateData(widget.uid, function (err, templateData) {
+		app.render('widgets/featured-topics-ex-sidebar', templateData, callback);
+	})
+}
 
 Plugin.renderFeaturedTopicsBlocks = function(widget, callback) {
 	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {

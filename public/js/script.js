@@ -34,4 +34,17 @@ $(function(){
 
 		$('.category-box').hover(function(){ $(this).prev().children().first().css('filter', 'brightness(115%)'); console.log('in'); }, function(){ $(this).prev().children().first().css('filter', ''); console.log('out'); });
 	});
+
+  var widgetsSelector = ''
+
+  widgetsSelector += '[data-widget="featuredTopicsExSidebar"]' + ', '
+  widgetsSelector += '[data-widget="featuredTopicsExBlocks"]' + ', '
+  widgetsSelector += '[data-widget="featuredTopicsExCards"]' + ', '
+  widgetsSelector += '[data-widget="featuredTopicsExList"]'
+
+  $(window).on('action:widgets.loaded', function(ev, data) {
+    var $widgets = $(widgetsSelector)
+    $widgets.find('span.timeago').timeago()
+    $widgets.find('.avatar').tooltip()
+  })
 });
