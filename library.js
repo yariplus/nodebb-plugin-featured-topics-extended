@@ -36,16 +36,21 @@ function getFeaturedTopics(uid, data, cb) {
 		if (data.tid) {
 			if (tids.indexOf(data.tid) === -1) {
 				db.sortedSetAdd('featuredex:tids', 0, data.tid, function(){});
-				tids.unshift(data.tid);
+			  tids.unshift(data.tid);
 			}
-		}
+    }
 
-		topics.getTopicsByTids(tids, uid, function (err, topics) {
-			if (err) return cb(err, topics);
+    topics.getTopicsByTids(tids, uid, function (err, topicsData) {
+      if (err) return cb(err, topicsData);
 
-			// Templates customisation.
-			// TODO
-			cb(err, topics);
+      async.forEachOf(topicsData, function (topicData, i, next) {
+        topics.getMainPost(topicData.tid, uid, function(err, mainPost) {
+          topicsData[i].post = mainPost
+          next()
+        })
+      }, function () {
+        cb(err, topicsData)
+      })
 		});
 	});
 }
@@ -65,7 +70,6 @@ function setFeaturedTopics(data, cb) {
 
 // Setup routes.
 Plugin.init = function (params, next) {
-
 	app = params.app;
 	settings = new Settings('featured-topics-extended', '1.0.0', defaultSettings, readSettings);
 
@@ -100,7 +104,6 @@ Plugin.init = function (params, next) {
 		autoFeature = settings.get('autoFeature').split(',').map(function(cid){
 			return parseInt(cid, 10) || 0;
 		});
-		console.log(autoFeature);
 	}
 
 	next();
@@ -239,34 +242,24 @@ Plugin.getWidgets = function(widgets, callback) {
 	});
 };
 
-function getTemplateData(uid, done) {
-  var templateData = {
-    relative_path: nconf.get('relative_path')
-  }
+function getTemplateData(uid, data, done) {
+  var templateData = { }
 
-  getFeaturedTopics(uid, null, function(err, featuredTopics) {
+  getFeaturedTopics(uid, data, function(err, featuredTopics) {
     templateData.topics = featuredTopics
     done(null, templateData)
   })
 }
 
 Plugin.renderFeaturedTopicsSidebar = function(widget, callback) {
-  getTemplateData(widget.uid, function (err, templateData) {
+  getTemplateData(widget.uid, null, function (err, templateData) {
 		app.render('widgets/featured-topics-ex-sidebar', templateData, callback);
 	})
 }
 
 Plugin.renderFeaturedTopicsBlocks = function(widget, callback) {
-	getFeaturedTopics(widget.uid, null, function(err, featuredTopics) {
-		async.each(featuredTopics, function(topic, next) {
-			topics.getTopicPosts(topic.tid, 'tid:' + topic.tid + ':posts', 0, 4, widget.uid, true, function(err, posts) {
-				topic.posts = posts;
-				next(err);
-			});
-		}, function(err) {
-			app.render('widgets/featured-topics-ex-blocks', {topics:featuredTopics}, callback);
-		});
-
+	getTemplateData(widget.uid, null, function (err, templateData) {
+    app.render('widgets/featured-topics-ex-blocks', templateData, callback);
 	});
 };
 
@@ -434,7 +427,6 @@ function render(req, res, next) {
 			var parsed = tjs.parse(settings.get('customTemplate'), payload);
 			translator.translate(parsed, function(translatedHTML) {
 				translatedHTML = translatedHTML.replace('&#123;', '{').replace('&#125;', '}');
-				console.log(translatedHTML);
 				res.render('news', {newsTemplate: translatedHTML});
 			});
 		}
