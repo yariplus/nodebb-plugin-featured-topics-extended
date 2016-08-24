@@ -26,7 +26,7 @@
 		"./public/less/style.less"
 	],
 	"scripts": [
-		"../../public/vendor/jquery/js/jquery-ui-1.10.4.custom.js",
+		"./public/js/jqueryui.js",
 		"./public/js/script.js"
 	],
 	"acpScripts": [
