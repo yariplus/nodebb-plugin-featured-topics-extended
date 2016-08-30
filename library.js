@@ -343,14 +343,15 @@ function getDate(timestamp){
 
 // Render the news.
 function render(req, res, next) {
-	var payload       = {config: {relative_path: nconf.get('relative_path')}, newsTemplate: ''};
+	var payload       = {config: {relative_path: nconf.get('relative_path')}};
 	var topicsPerPage = 5;
 	var topicIndex    = 0;
+  var uid = req.uid
 
-	if (!req.uid && settings.get('newsHideAnon')) return res.render('news', payload);
+	if (!uid && settings.get('newsHideAnon')) return res.render('news', payload);
 
 	async.waterfall([
-		async.apply(getFeaturedTopics, req.uid, {}),
+		async.apply(getFeaturedTopics, uid, {}),
 		function (topicsData, next) {
 			topicsData = topicsData.filter(function (topic) {
 				return !topic.deleted;
@@ -381,7 +382,6 @@ function render(req, res, next) {
 				var x = (currentPage - 1)*5+i;
 				if (topicsData[x]) {
 					payload.topics.push(topicsData[x]);
-					tids.push(topicsData[x].tid);
 				}
 			}
 
@@ -389,16 +389,10 @@ function render(req, res, next) {
 				topics.increaseViewCount(topicsData[0].tid);
 			}
 
-			next(null, tids, req.uid);
-		},
-		async.apply(topics.getMainPosts),
-		function (posts, next) {
-
-			for (var i = 0; i < payload.topics.length; i++) {
-				payload.topics[i].post = posts[i];
-				payload.topics[i].date = getDate(payload.topics[i].timestamp);
-				payload.topics[i].postcount = payload.topics[i].postcount - 1;
-			}
+			payload.topics.forEach(function (topic) {
+				topic.date = getDate(topic.timestamp)
+				topic.replies = topic.postcount - 1
+			})
 
 			payload.topics.sort(function compare(a, b) {
 				if (a.timestamp > b.timestamp) {
@@ -410,7 +404,6 @@ function render(req, res, next) {
 				return 0;
 			});
 			next();
-
 		}
 	], function (err) {
 		if (err) winston.error("Error parsing news page:", err ? (err.message || err) : 'null');
@@ -420,14 +413,14 @@ function render(req, res, next) {
 		if (template !== 'custom') {
 			app.render('news-' + template, payload, function(err, html) {
 				translator.translate(html, function(translatedHTML) {
-					res.render('news', {newsTemplate: translatedHTML});
+					res.render('news', res.locals.isAPI ? payload : {newsTemplate: translatedHTML});
 				});
 			});
 		}else{
 			var parsed = tjs.parse(settings.get('customTemplate'), payload);
 			translator.translate(parsed, function(translatedHTML) {
 				translatedHTML = translatedHTML.replace('&#123;', '{').replace('&#125;', '}');
-				res.render('news', {newsTemplate: translatedHTML});
+				res.render('news', res.locals.isAPI ? payload : {newsTemplate: translatedHTML});
 			});
 		}
 	});
