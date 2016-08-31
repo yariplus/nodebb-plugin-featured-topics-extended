@@ -1,0 +1,18 @@
+# Source
+src/
+
+# Tests
+test/
+
+# Dot Files
+.*
+
+# Coverage
+coverage
+.nyc_output
+
+# Bashisms
+*.sh
+
+# Swagger
+*.jar

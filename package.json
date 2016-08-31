@@ -2,14 +2,11 @@
   "name": "nodebb-plugin-featured-topics-extended",
   "version": "0.1.7",
   "description": "Adds a customisable news/blog page and some widgets using featured topics.",
-  "main": "library.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended"
-  },
+  "license": "(CC0-1.0 OR MIT)",
+  "main": "./lib/plugin.js",
+  "repository": "yariplus/nodebb-plugin-featured-topics-extended",
+  "homepage": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended",
+  "bugs": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended/issues",
   "keywords": [
     "nodebb",
     "plugin",
@@ -18,24 +15,40 @@
     "featured",
     "topics"
   ],
-  "author": {
-    "name": "yariplus",
-    "email": "tafike@gmail.com"
+  "nbbpm": {
+    "compatibility": "^1.0.0"
   },
-  "license": "(CC0-1.0 OR MIT)",
-  "bugs": {
-    "url": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended/issues"
-  },
-  "readme": "",
-  "readmeFilename": "README.md",
   "dependencies": {
     "async": "~1.5.0",
     "nconf": "~0.8.2",
     "templates.js": "0.3.3",
     "winston": "^2.1.0"
   },
-  "nbbpm": {
-    "compatibility": "^1.0.0"
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-plugin-array-includes": "^2.0.3",
+    "babel-plugin-transform-object-assign": "^6.8.0",
+    "babel-plugin-transform-object-rest-spread": "^6.8.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-register": "^6.9.0",
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3",
+    "nyc": "^6.4.4",
+    "standard": "^7.1.2"
   },
-  "homepage": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended"
+  "scripts": {
+    "compile": "babel src -d lib",
+    "test": "npm run compile && npm run test:run && npm run test:report",
+    "test:run": "nyc --require babel-register mocha test/test.js",
+    "test:report": "nyc report --reporter=lcov"
+  },
+  "nyc": {
+    "exclude": [
+      "nodebb",
+      "test"
+    ]
+  },
+  "standard": {
+    "parser": "babel-eslint"
+  }
 }
