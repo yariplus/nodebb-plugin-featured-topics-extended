@@ -12,9 +12,9 @@
     { "hook": "filter:widgets.getAreas",        "method": "getAreas"    },
     { "hook": "filter:widgets.getWidgets",      "method": "getWidgets"  },
     { "hook": "filter:widget.render:featuredTopicsExBlocks",  "method": "renderFeaturedTopicsBlocks"  },
-    { "hook": "filter:widget.render:featuredTopicsExSidebar", "method": "renderFeaturedTopicsSidebar" },
     { "hook": "filter:widget.render:featuredTopicsExCards",   "method": "renderFeaturedTopicsCards"   },
     { "hook": "filter:widget.render:featuredTopicsExList",    "method": "renderFeaturedTopicsList"    },
+    { "hook": "filter:widget.render:featuredTopicsExSidebar", "method": "renderFeaturedTopicsSidebar" },
     { "hook": "filter:topic.thread_tools", "method": "addThreadTools" },
     { "hook": "action:topic.post", "method": "topicPost" }
   ],

@@ -73,8 +73,6 @@ export function homepageGet (data, next) {
   next(null, data)
 }
 
-
-
 // Get featured topics, possibly adding a new one.
 function getFeaturedTopics(uid, data={}, cb) {
   db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, (err, tids) => {
@@ -113,7 +111,8 @@ function setFeaturedTopics(data, cb) {
   })
 }
 
-// Add a widget area for the news page.
+// Hook filter:widgets.getAreas
+// Add a widget areas for the news page.
 export function getAreas (areas, cb) {
   areas = areas.concat([
     {
@@ -156,69 +155,32 @@ export function getAreas (areas, cb) {
   cb(null, areas)
 }
 
-// Pass hook data to the render function.
-export function newsRender (data) {
-  render(data.req, data.res, data.next)
-}
-
-//
-export function addNavs (items, cb) {
-  items.push({
-    route     : "/news",
-    title     : "News",
-    enabled   : false,
-    iconClass : "fa-newspaper-o",
-    textClass : "visible-xs-inline",
-    text      : "News"
-  })
-  cb(null, items)
-}
-
-//
-export function adminBuild (header, cb) {
-  header.plugins.push({
-    route : '/plugins/featured-topics-extended',
-    icon  : 'fa-newspaper-o',
-    name  : 'Featured Topics Extended'
-  })
-  cb(null, header)
-}
-
-export function addThreadTools (data, callback) {
-  data.tools.push({
-    "title": "Feature this Topic",
-    "class": "mark-featured",
-    "icon": "fa-star"
-  })
-
-  callback(null, data)
-}
-
+// Hook filter:widgets.getWidgets
 export function getWidgets (widgets, callback) {
   const _widgets = [
     {
-      widget: "featuredTopicsExSidebar",
-      name: "Featured Topics Sidebar",
-      description: "Featured topics as a sidebar widget.",
-      content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+      widget: 'featuredTopicsExSidebar',
+      name: 'Featured Topics Sidebar',
+      description: 'Featured topics as a sidebar widget.',
+      content: '<small>Use the Topic Tools on a topic page to feature that topic.</small>'
     },
     {
-      widget: "featuredTopicsExBlocks",
-      name: "Featured Topics Blocks",
-      description: "Featured topics as Lavender-style blocks.",
-      content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+      widget: 'featuredTopicsExBlocks',
+      name: 'Featured Topics Blocks',
+      description: 'Featured topics as Lavender-style blocks.',
+      content: '<small>Use the Topic Tools on a topic page to feature that topic.</small>'
     },
     {
-      widget: "featuredTopicsExCards",
-      name: "Featured Topics Cards",
-      description: "Featured topics as Persona-style topic cards.",
-      content: "admin/widgets/featured-topics-ex-cards.tpl"
+      widget: 'featuredTopicsExCards',
+      name: 'Featured Topics Cards',
+      description: 'Featured topics as Persona-style topic cards.',
+      content: 'admin/widgets/featured-topics-ex-cards.tpl'
     },
     {
-      widget: "featuredTopicsExList",
-      name: "Featured Topics List",
-      description: "Featured topics as a normal topic list.",
-      content: "<small>Use the Topic Tools on a topic page to feature that topic.</small>"
+      widget: 'featuredTopicsExList',
+      name: 'Featured Topics List',
+      description: 'Featured topics as a normal topic list.',
+      content: '<small>Use the Topic Tools on a topic page to feature that topic.</small>'
     }
   ]
 
@@ -236,6 +198,7 @@ export function getWidgets (widgets, callback) {
   })
 }
 
+// ?
 function getTemplateData(uid, data, done) {
   const templateData = { }
 
@@ -245,18 +208,21 @@ function getTemplateData(uid, data, done) {
   })
 }
 
+// Hook filter:widget.render:featuredTopicsExSidebar
 export function renderFeaturedTopicsSidebar (widget, callback) {
   getTemplateData(widget.uid, null, (err, templateData) => {
     app.render('widgets/featured-topics-ex-sidebar', templateData, callback)
   })
 }
 
+// Hook filter:widget.render:featuredTopicsExBlocks
 export function renderFeaturedTopicsBlocks (widget, callback) {
   getTemplateData(widget.uid, null, (err, templateData) => {
     app.render('widgets/featured-topics-ex-blocks', templateData, callback)
   })
 }
 
+// Hook filter:widget.render:featuredTopicsExCards
 export function renderFeaturedTopicsCards (widget, callback) {
   getFeaturedTopics(widget.uid, null, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
@@ -276,6 +242,7 @@ export function renderFeaturedTopicsCards (widget, callback) {
   })
 }
 
+// Hook filter:widget.render:featuredTopicsExList
 export function renderFeaturedTopicsList (widget, callback) {
   getFeaturedTopics(widget.uid, null, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
@@ -294,6 +261,7 @@ export function renderFeaturedTopicsList (widget, callback) {
   })
 }
 
+// Hook filter:widget.render:featuredTopicsExNews
 export function renderFeaturedTopicsNews (widget, callback) {
   getFeaturedTopics(widget.uid, null, (err, featuredTopics) => {
     app.render('news', {}, (err, html) => {
@@ -304,6 +272,51 @@ export function renderFeaturedTopicsNews (widget, callback) {
   })
 }
 
+// Hook action:homepage.get:news
+// Pass hook data to the render function.
+export function newsRender (data) {
+  render(data.req, data.res, data.next)
+}
+
+// Hook filter:navigation.available
+// Adds an available nav icon to admin page.
+export function addNavs (items, cb) {
+  items.push({
+    route     : '/news',
+    title     : 'News',
+    enabled   : false,
+    iconClass : 'fa-newspaper-o',
+    textClass : 'visible-xs-inline',
+    text      : 'News'
+  })
+  cb(null, items)
+}
+
+// Hook filter:admin.header.build
+// Adds a link to the plugin settings page to the ACP Plugins menu.
+export function adminBuild (header, cb) {
+  header.plugins.push({
+    route : '/plugins/featured-topics-extended',
+    icon  : 'fa-newspaper-o',
+    name  : 'Featured Topics Extended'
+  })
+  cb(null, header)
+}
+
+// Hook filter:topic.thread_tools
+// Adds the 'Feature this Topic' link to the 'Topic Tools' menu.
+export function addThreadTools (data, callback) {
+  data.tools.push({
+    title: 'Feature this Topic',
+    class: 'mark-featured',
+    icon: 'fa-star'
+  })
+
+  callback(null, data)
+}
+
+// Hook action:topic.post
+// Auto-feature topics in the selected categories.
 export function topicPost (topicData) {
   if (autoFeature.indexOf(parseInt(topicData.cid, 10)) !== -1) {
     getFeaturedTopics(-1, {tid: topicData.tid}, (err, topicsData) => {
@@ -398,7 +411,7 @@ function render(req, res, next) {
       next()
     }
   ], err => {
-    if (err) winston.error("Error parsing news page:", err ? (err.message || err) : 'null')
+    if (err) winston.error('Error parsing news page:', err ? (err.message || err) : 'null')
 
     const template = settings.get('newsTemplate') || defaultSettings['newsTemplate']
 
