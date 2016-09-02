@@ -83,7 +83,7 @@ function getFeaturedTopics(uid, data={}, cb) {
       }
     }
 
-    topics.getTopicsByTids(tids, uid, (err, topicsData) => {
+    topics.getTopics(tids, uid, (err, topicsData) => {
       if (err) return cb(err, topicsData)
 
       async.forEachOf(topicsData, (topicData, i, next) => {
