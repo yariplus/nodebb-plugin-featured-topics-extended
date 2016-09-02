@@ -26,10 +26,10 @@
     "./public/less/style.less"
   ],
   "scripts": [
-    "./public/js/jqueryui.js",
-    "./public/js/script.js"
+    "./public/vendor/jqueryui.js",
+    "./public/src/script.js"
   ],
   "acpScripts": [
-    "./public/js/script.js"
+    "./public/src/script.js"
   ]
 }

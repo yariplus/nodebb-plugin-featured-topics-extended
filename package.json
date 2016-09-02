@@ -37,7 +37,7 @@
     "standard": "^7.1.2"
   },
   "scripts": {
-    "compile": "babel src -d lib",
+    "compile": "babel src -d .",
     "test": "npm run compile && npm run test:run && npm run test:report",
     "test:run": "nyc --require babel-register mocha test/test.js",
     "test:report": "nyc report --reporter=lcov"
