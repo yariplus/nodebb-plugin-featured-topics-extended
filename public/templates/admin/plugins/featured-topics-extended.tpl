@@ -1,4 +1,4 @@
-<form id="featured-topics-extended">
+<form id="fte-admin-page">
 	<div class="panel panel-primary">
 		<div class="panel-heading"><span class="panel-title">Topics</span></div>
 		<div class="panel-body">
@@ -34,7 +34,7 @@
 					<h3 class="panel-title"><i class="fa fa-caret-down pull-right"></i>Custom Template</h3>
 				</div>
 				<div class="panel-body collapse themes">
-					<div id="template-editor"></div>
+					<div id="template-editor" class="fte-ace"></div>
 					<textarea data-key="customTemplate" style="display:none;"></textarea>
 				</div>
 			</div>
