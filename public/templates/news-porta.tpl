@@ -42,7 +42,7 @@
             <span class="views">({topics.viewcount} Views / {topics.post.votes} Upvotes)</span>
             <span class="comments">
               <div class="new"></div>
-              <a href="/topic/{topics.slug}">{topics.postcount} Replies <i class="fa fa-comment"></i></a>
+              <a href="/topic/{topics.slug}">{topics.replies} Replies <i class="fa fa-comment"></i></a>
             </span>
           </div>
           <div class="content newsText">{topics.post.content}</div>
