@@ -48,7 +48,14 @@ export function init (params, next) {
   }
 
   SocketAdmin.getFeaturedTopics = (socket, data, callback) => {
-    getFeaturedTopics(socket.uid, data, callback)
+    if (data && data.tid) {
+      featureTid(data.tid, err => {
+        if (err) return callback(err)
+        getFeaturedTopics(socket.uid, callback)
+      })
+    } else {
+      getFeaturedTopics(socket.uid, callback)
+    }
   }
 
   SocketAdmin.setFeaturedTopics = (socket, data, next) => {
@@ -73,18 +80,19 @@ export function homepageGet (data, next) {
   next(null, data)
 }
 
-// Get featured topics, possibly adding a new one.
-function getFeaturedTopics(uid, data={}, cb) {
+function featureTid (tid, cb) {
+  db.sortedSetAdd('featuredex:tids', 0, tid, cb)
+}
+
+// Get featured topics.
+function getFeaturedTopics(uid, cb) {
   db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, (err, tids) => {
-    if (data.tid) {
-      if (tids.indexOf(data.tid) === -1) {
-        db.sortedSetAdd('featuredex:tids', 0, data.tid, () => {})
-        tids.unshift(data.tid)
-      }
-    }
+    if (err) return cb(err)
 
     topics.getTopics(tids, uid, (err, topicsData) => {
-      if (err) return cb(err, topicsData)
+      if (err) return cb(err)
+
+      topicsData = topicsData.filter(topic => !topic.deleted)
 
       async.forEachOf(topicsData, (topicData, i, next) => {
         topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
@@ -92,7 +100,7 @@ function getFeaturedTopics(uid, data={}, cb) {
           next()
         })
       }, () => {
-        cb(err, topicsData)
+        cb(null, topicsData)
       })
     })
   })
@@ -198,33 +206,23 @@ export function getWidgets (widgets, callback) {
   })
 }
 
-// ?
-function getTemplateData(uid, data, done) {
-  const templateData = { }
-
-  getFeaturedTopics(uid, data, (err, featuredTopics) => {
-    templateData.topics = featuredTopics
-    done(null, templateData)
-  })
-}
-
 // Hook filter:widget.render:featuredTopicsExSidebar
 export function renderFeaturedTopicsSidebar (widget, callback) {
-  getTemplateData(widget.uid, null, (err, templateData) => {
-    app.render('widgets/featured-topics-ex-sidebar', templateData, callback)
+  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+    app.render('widgets/featured-topics-ex-sidebar', {topics: featuredTopics}, callback)
   })
 }
 
 // Hook filter:widget.render:featuredTopicsExBlocks
 export function renderFeaturedTopicsBlocks (widget, callback) {
-  getTemplateData(widget.uid, null, (err, templateData) => {
-    app.render('widgets/featured-topics-ex-blocks', templateData, callback)
+  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+    app.render('widgets/featured-topics-ex-blocks', {topics: featuredTopics}, callback)
   })
 }
 
 // Hook filter:widget.render:featuredTopicsExCards
 export function renderFeaturedTopicsCards (widget, callback) {
-  getFeaturedTopics(widget.uid, null, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
       topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
@@ -244,7 +242,7 @@ export function renderFeaturedTopicsCards (widget, callback) {
 
 // Hook filter:widget.render:featuredTopicsExList
 export function renderFeaturedTopicsList (widget, callback) {
-  getFeaturedTopics(widget.uid, null, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
       topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
@@ -262,8 +260,9 @@ export function renderFeaturedTopicsList (widget, callback) {
 }
 
 // Hook filter:widget.render:featuredTopicsExNews
+// TODO
 export function renderFeaturedTopicsNews (widget, callback) {
-  getFeaturedTopics(widget.uid, null, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
     app.render('news', {}, (err, html) => {
       translator.translate(html, translatedHTML => {
         callback(err, translatedHTML)
@@ -319,10 +318,8 @@ export function addThreadTools (data, callback) {
 // Auto-feature topics in the selected categories.
 export function topicPost (topicData) {
   if (autoFeature.indexOf(parseInt(topicData.cid, 10)) !== -1) {
-    getFeaturedTopics(-1, {tid: topicData.tid}, (err, topicsData) => {
-      if (err) return
-      const tids = topicsData.map(topic => topic.tid)
-      setFeaturedTopics({tids}, () => {})
+    featureTid(topicData.tid, err => {
+      if (err) winston.error(err)
     })
   }
 }
@@ -358,10 +355,8 @@ function render(req, res, next) {
   if (!uid && settings.get('newsHideAnon')) return res.render('news', payload)
 
   async.waterfall([
-    async.apply(getFeaturedTopics, uid, {}),
+    async.apply(getFeaturedTopics, uid),
     (topicsData, next) => {
-      topicsData = topicsData.filter(topic => !topic.deleted)
-
       const topicCount  = topicsData.length
       const pageCount   = Math.max(1, Math.ceil(topicCount / topicsPerPage))
       let currentPage = parseInt(req.params.page, 10) || 1
