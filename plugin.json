@@ -26,7 +26,6 @@
     "./public/less/style.less"
   ],
   "scripts": [
-    "./public/vendor/jqueryui.js",
     "./public/src/script.js"
   ],
   "acpScripts": [
