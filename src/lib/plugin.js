@@ -85,24 +85,55 @@ function featureTid (tid, cb) {
   db.sortedSetAdd('featuredex:tids', 0, tid, cb)
 }
 
-// Get featured topics.
-function getFeaturedTopics(uid, cb) {
-  db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, (err, tids) => {
+// Get admin/mod-featured topics.
+function getFeaturedTopics (uid, cb) {
+  db.getSortedSetRevRangeByScore('featuredex:tids', 0, 10000, '+inf', 0, (err, tids) => {
     if (err) return cb(err)
 
-    Topics.getTopics(tids, uid, (err, topicsData) => {
+    getTopicsWithMainPost(uid, tids, (err, topicsData) => {
       if (err) return cb(err)
 
-      topicsData = topicsData.filter(topic => !topic.deleted)
+      cb(null, topicsData)
+    })
+  })
+}
 
-      async.forEachOf(topicsData, (topicData, i, next) => {
-        Topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
-          topicsData[i].post = mainPost
-          next()
-        })
-      }, () => {
-        cb(null, topicsData)
+// Get user-featured lists.
+function getUserFeaturedLists (uid, theirid, cb) {
+  db.getSortedSetRangeByScore(`uid:${theirid}:featured`, 0, 1000, 0, '+inf', (err, lists) => {
+    if (err) return cb(err)
+
+    cb(null, lists)
+  })
+}
+
+// Get user-featured topics.
+function getUserFeaturedTopics (uid, theirid, list, page, size, cb) {
+  db.getSortedSetRevRangeByScore(`uid:${theirid}:featured:${list}:topics`, page * size, page * size + size, '+inf', 0, (err, tids) => {
+    if (err) return cb(err)
+
+    getTopicsWithMainPost(uid, tids, (err, topicsData) => {
+      if (err) return cb(err)
+
+      cb(null, topicsData)
+    })
+  })
+}
+
+// Filter an array of topics and add the main post.
+function getTopicsWithMainPost (uid, tids, cb) {
+  Topics.getTopics(tids, uid, (err, topicsData) => {
+    if (err) return cb(err)
+
+    topicsData = topicsData.filter(topic => !topic.deleted)
+
+    async.forEachOf(topicsData, (topicData, i, next) => {
+      Topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
+        topicsData[i].post = mainPost
+        next()
       })
+    }, () => {
+      cb(null, topicsData)
     })
   })
 }
