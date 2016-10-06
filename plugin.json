@@ -16,6 +16,7 @@
     { "hook": "filter:widget.render:featuredTopicsExList",    "method": "renderFeaturedTopicsList"    },
     { "hook": "filter:widget.render:featuredTopicsExSidebar", "method": "renderFeaturedTopicsSidebar" },
     { "hook": "filter:topic.thread_tools", "method": "addThreadTools" },
+    { "hook": "filter:post.tools", "method": "addPostTools" },
     { "hook": "action:topic.post", "method": "topicPost" }
   ],
   "staticDirs": {

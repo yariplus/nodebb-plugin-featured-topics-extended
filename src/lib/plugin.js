@@ -5,7 +5,8 @@ import winston from 'winston'
 import tjs from 'templates.js'
 
 const categories = require.main.require('./src/categories')
-const topics = require.main.require('./src/topics')
+const Topics = require.main.require('./src/topics')
+const Posts = require.main.require('./src/posts')
 const db = require.main.require('./src/database')
 const translator = require.main.require('./public/src/modules/translator')
 const nconf = require.main.require('nconf')
@@ -89,13 +90,13 @@ function getFeaturedTopics(uid, cb) {
   db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, (err, tids) => {
     if (err) return cb(err)
 
-    topics.getTopics(tids, uid, (err, topicsData) => {
+    Topics.getTopics(tids, uid, (err, topicsData) => {
       if (err) return cb(err)
 
       topicsData = topicsData.filter(topic => !topic.deleted)
 
       async.forEachOf(topicsData, (topicData, i, next) => {
-        topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
+        Topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
           topicsData[i].post = mainPost
           next()
         })
@@ -224,7 +225,7 @@ export function renderFeaturedTopicsBlocks (widget, callback) {
 export function renderFeaturedTopicsCards (widget, callback) {
   getFeaturedTopics(widget.uid, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
-      topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
+      Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
         next(err)
       })
@@ -244,7 +245,7 @@ export function renderFeaturedTopicsCards (widget, callback) {
 export function renderFeaturedTopicsList (widget, callback) {
   getFeaturedTopics(widget.uid, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
-      topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
+      Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
         next(err)
       })
@@ -312,6 +313,26 @@ export function addThreadTools (data, callback) {
   })
 
   callback(null, data)
+}
+
+// Hook filter:post.tools
+// Adds user thread feature link.
+export function addPostTools (data, callback) {
+  Posts.isMain(data.pid, (err, isMain) => {
+    if (err) {
+      return callback(err)
+    }
+
+    if (isMain) {
+      data.tools.push({
+        action: 'mark-featured',
+        html: 'Feature this Topic',
+        icon: 'fa-star'
+      })
+    }
+
+    callback(null, data)
+  })
 }
 
 // Hook action:topic.post
@@ -386,7 +407,7 @@ function render(req, res, next) {
       }
 
       if (currentPage === 1 && topicsData[0]) {
-        topics.increaseViewCount(topicsData[0].tid)
+        Topics.increaseViewCount(topicsData[0].tid)
       }
 
       payload.topics.forEach(topic => {
