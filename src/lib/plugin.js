@@ -80,7 +80,31 @@ export function init (params, next) {
     autoFeature = settings.get('autoFeature').split(',').map(cid => parseInt(cid, 10) || 0)
   }
 
-  next()
+  // Import News Page list. Depreciated. Remove in v1.0.0
+  db.exists(`featuredex:tids`, (err, exists) => {
+    if (err || !exists) return next()
+
+    db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, (err, tids) => {
+      if (err || !tids || !tids.length) {
+        return next()
+      }
+
+      Topics.getTopicsFields(tids, ['tid', 'timestamp'], (err, topics) => {
+        if (err || !topics) return next()
+
+        db.sortedSetAdd(`featuredex:featured`, topics.length, `News Page`)
+
+        async.each(topics, (topic, next) => {
+          db.sortedSetAdd(`featuredex:featured:News Page:topics`, topic.timestamp, topic.tid, next)
+        }, err => {
+          if (err) return next()
+
+          db.delete('featuredex:tids')
+          next()
+        })
+      })
+    })
+  })
 }
 
 // Hook filter:homepage.get
@@ -193,19 +217,6 @@ function getTopicsWithMainPost (uid, tids, cb) {
     }, () => {
       cb(null, topicsData)
     })
-  })
-}
-
-function setFeaturedTopics(data, cb) {
-  db.delete('featuredex:tids', err => {
-    const scores = []
-    const values = []
-    data.tids.forEach((tid, i) => {
-      scores.push(i)
-      values.push(tid)
-    })
-
-    db.sortedSetAdd('featuredex:tids', scores, values, cb)
   })
 }
 

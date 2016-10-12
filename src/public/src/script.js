@@ -1,8 +1,6 @@
 $(() => {
   app.loadJQueryUI(() => {
     function openModal (lists) {
-      console.log('Got lists:')
-      console.log(lists)
       lists = lists.map(list => `<option value="${list}">${list}</option>`).join('')
 
       bootbox.dialog({
