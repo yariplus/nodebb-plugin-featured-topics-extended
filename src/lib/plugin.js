@@ -4,15 +4,15 @@ import async from 'async'
 import winston from 'winston'
 import tjs from 'templates.js'
 
-const categories = require.main.require('./src/categories')
 const Topics = require.main.require('./src/topics')
 const Posts = require.main.require('./src/posts')
 const db = require.main.require('./src/database')
 const translator = require.main.require('./public/src/modules/translator')
 const nconf = require.main.require('nconf')
 const Settings = require.main.require('./src/settings')
-const SocketTopics = require.main.require('./src/socket.io/topics')
-const SocketAdmin  = require.main.require('./src/socket.io/admin')
+const User  = require.main.require('./src/user')
+const SocketAdmin = require.main.require('./src/socket.io/admin')
+const SocketPlugins = require.main.require('./src/socket.io/plugins')
 
 const defaultSettings = {
   newsTemplate     : 'porta',
@@ -48,19 +48,32 @@ export function init (params, next) {
     settings.sync(readSettings)
   }
 
-  SocketAdmin.getFeaturedTopics = (socket, data, callback) => {
-    if (data && data.tid) {
-      featureTid(data.tid, err => {
-        if (err) return callback(err)
-        getFeaturedTopics(socket.uid, callback)
-      })
-    } else {
-      getFeaturedTopics(socket.uid, callback)
-    }
+  SocketPlugins.FeaturedTopicsExtended = {}
+
+  SocketPlugins.FeaturedTopicsExtended.getUserFeaturedLists = (socket, data, next) => {
+    getUserFeaturedLists(socket.uid, data.uid, next)
   }
 
-  SocketAdmin.setFeaturedTopics = (socket, data, next) => {
-    setFeaturedTopics(data, next)
+  SocketPlugins.FeaturedTopicsExtended.getGlobalFeaturedLists = (socket, data, next) => {
+    User.isAdminOrGlobalMod(socket.uid, (err, isAdminOrGlobalMod) => {
+      if (err || !isAdminOrGlobalMod) return callback(err || new Error('[[error:no-privileges]]'))
+
+      getGlobalFeaturedLists(next)
+    })
+  }
+
+  SocketPlugins.FeaturedTopicsExtended.featureTopic = (socket, data, next) => {
+    const isSelf = socket.uid === data.theirid
+
+    User.isAdminOrGlobalMod(socket.uid, (err, isAdminOrGlobalMod) => {
+      if (data.theirid) {
+        if (!(isSelf || isAdminOrGlobalMod)) return next(new Error(`Cannot change another user's featured topics.`))
+      } else {
+        if (!isAdminOrGlobalMod) return callback(err || new Error('[[error:no-privileges]]'))
+      }
+
+      featureTopic(data.tid, data.theirid, data.list, next)
+    })
   }
 
   function readSettings() {
@@ -81,13 +94,43 @@ export function homepageGet (data, next) {
   next(null, data)
 }
 
-function featureTid (tid, cb) {
-  db.sortedSetAdd('featuredex:tids', 0, tid, cb)
+function featureTopic (tid, theirid, list, cb) {
+  let listkey = theirid ? `uid:${theirid}:featured` : `featuredex:featured`
+  let topicskey = theirid ? `uid:${theirid}:featured:${list}:topics` : `featuredex:featured:${list}:topics`
+
+  db.isSortedSetMember(listkey, list, (err, isMember) => {
+    if (err || !isMember) return cb(err || new Error(`List ${list} does not exist.`))
+
+    Topics.getTopicField(tid, 'timestamp', (err, timestamp) => {
+      if (err) return cb(err)
+
+      db.sortedSetAdd(topicskey, timestamp, tid, cb)
+    })
+  })
 }
 
-// Get admin/mod-featured topics.
-function getFeaturedTopics (uid, cb) {
-  db.getSortedSetRevRangeByScore('featuredex:tids', 0, 10000, '+inf', 0, (err, tids) => {
+// Get lists made by admins or global mods.
+const getGlobalFeaturedLists = (cb) => {
+  db.getSortedSetRangeByScore('featuredex:featured', 0, 1000, 0, '+inf', (err, lists) => {
+    if (err || !lists) return cb(err)
+
+    if (!lists.length) {
+      createDefaultFeaturedList(0, (err) => {
+        if (err) return cb(err)
+
+        getGlobalFeaturedLists(cb)
+      })
+    } else {
+      cb(null, lists)
+    }
+  })
+}
+
+// Get topics featured by admins or global mods.
+function getFeaturedTopics (uid, list, page, size, cb) {
+  page--
+
+  db.getSortedSetRevRangeByScore(`featuredex:featured:${list}:topics`, page * size, page * size + size, '+inf', 0, (err, tids) => {
     if (err) return cb(err)
 
     getTopicsWithMainPost(uid, tids, (err, topicsData) => {
@@ -99,11 +142,21 @@ function getFeaturedTopics (uid, cb) {
 }
 
 // Get user-featured lists.
-function getUserFeaturedLists (uid, theirid, cb) {
-  db.getSortedSetRangeByScore(`uid:${theirid}:featured`, 0, 1000, 0, '+inf', (err, lists) => {
-    if (err) return cb(err)
+const getUserFeaturedLists = (uid, theirid, cb) => {
+  const isSelf = uid === theirid
 
-    cb(null, lists)
+  db.getSortedSetRangeByScore(`uid:${theirid}:featured`, 0, 1000, 0, '+inf', (err, lists) => {
+    if (err || !lists) return cb(err)
+
+    if (isSelf && !lists.length) {
+      createDefaultFeaturedList(theirid, (err) => {
+        if (err) return cb(err)
+
+        getUserFeaturedLists(uid, theirid, cb)
+      })
+    } else {
+      cb(null, lists)
+    }
   })
 }
 
@@ -118,6 +171,11 @@ function getUserFeaturedTopics (uid, theirid, list, page, size, cb) {
       cb(null, topicsData)
     })
   })
+}
+
+// Create a blank default list.
+function createDefaultFeaturedList (theirid, next) {
+  db.sortedSetAdd(theirid ? `uid:${theirid}:featured` : `featuredex:featured`, Date.now(), 'Default List', next)
 }
 
 // Filter an array of topics and add the main post.
@@ -240,21 +298,21 @@ export function getWidgets (widgets, callback) {
 
 // Hook filter:widget.render:featuredTopicsExSidebar
 export function renderFeaturedTopicsSidebar (widget, callback) {
-  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
     app.render('widgets/featured-topics-ex-sidebar', {topics: featuredTopics}, callback)
   })
 }
 
 // Hook filter:widget.render:featuredTopicsExBlocks
 export function renderFeaturedTopicsBlocks (widget, callback) {
-  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
     app.render('widgets/featured-topics-ex-blocks', {topics: featuredTopics}, callback)
   })
 }
 
 // Hook filter:widget.render:featuredTopicsExCards
 export function renderFeaturedTopicsCards (widget, callback) {
-  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
       Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
@@ -274,7 +332,7 @@ export function renderFeaturedTopicsCards (widget, callback) {
 
 // Hook filter:widget.render:featuredTopicsExList
 export function renderFeaturedTopicsList (widget, callback) {
-  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
       Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
@@ -294,7 +352,7 @@ export function renderFeaturedTopicsList (widget, callback) {
 // Hook filter:widget.render:featuredTopicsExNews
 // TODO
 export function renderFeaturedTopicsNews (widget, callback) {
-  getFeaturedTopics(widget.uid, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
     app.render('news', {}, (err, html) => {
       translator.translate(html, translatedHTML => {
         callback(err, translatedHTML)
@@ -369,11 +427,6 @@ export function addPostTools (data, callback) {
 // Hook action:topic.post
 // Auto-feature topics in the selected categories.
 export function topicPost (topicData) {
-  if (autoFeature.indexOf(parseInt(topicData.cid, 10)) !== -1) {
-    featureTid(topicData.tid, err => {
-      if (err) winston.error(err)
-    })
-  }
 }
 
 // Date parsing helper.
@@ -407,7 +460,7 @@ function render(req, res, next) {
   if (!uid && settings.get('newsHideAnon')) return res.render('news', payload)
 
   async.waterfall([
-    async.apply(getFeaturedTopics, uid),
+    async.apply(getFeaturedTopics, uid, 'Default List', 1, 5),
     (topicsData, next) => {
       const topicCount  = topicsData.length
       const pageCount   = Math.max(1, Math.ceil(topicCount / topicsPerPage))

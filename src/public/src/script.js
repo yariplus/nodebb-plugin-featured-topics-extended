@@ -1,37 +1,48 @@
 $(() => {
   app.loadJQueryUI(() => {
-    function openModalMod(ev) {
-      if ($('#featured-topics-ex-modal').length) return app.error('Already editing featured topics.')
+    function openModal (lists) {
+      console.log('Got lists:')
+      console.log(lists)
+      lists = lists.map(list => `<option value="${list}">${list}</option>`).join('')
 
-      socket.emit('admin.getFeaturedTopics', {tid: ajaxify.data.tid}, (err, topics) => {
-        if (err) return app.error('Only admins can feature topics.')
-
-        ajaxify.loadTemplate('modals/featured-topics-ex-sort', function(featuredTpl) {
-
-          bootbox.confirm(templates.parse(featuredTpl, {topics:topics}), confirm => {
-            if (!confirm) return
-
-            const tids = []
-            $('.featured-topic').each(function(i) {
-              tids.push(this.getAttribute('data-tid'))
-            })
-
-            socket.emit('admin.setFeaturedTopics', {tids})
-          }).on("shown.bs.modal", () => {
-            $('span.timeago').timeago()
-            $('#sort-featured').sortable().disableSelection()
-
-            $('.delete-featured').on('click', function() {
-              $(this).parents('.panel').remove()
-            })
-          })
-        })
+      bootbox.dialog({
+        size: 'large',
+        title: 'Select a Featured Topic List',
+        message: `<form class="bootbox-form"><select class="bootbox-input bootbox-input-select form-control">${lists}</select></form><br><a>or click here to Manage your Featured Topic Lists</a>`,
+        show: true,
+        onEscape: true,
+        buttons: {
+          'cancel': { label: 'Cancel', className: 'btn-primary', callback: function () {} },
+          'accept': { label: 'Add Topic', className: 'btn-default', callback: function () {console.log($('.bootbox-input').val())} }
+        }
       })
     }
 
-    function registerEventHandlers() {
-      $('.topic').on('click', '.thread-tools .mark-featured', openModalMod)
-      $('#resort').on('click', openModalMod)
+    function openUserListSelect () {
+      if ($('#featured-topics-ex-modal').length) return app.error('Already editing featured topics.')
+
+      socket.emit('plugins.FeaturedTopicsExtended.getUserFeaturedLists', {uid: parseInt(ajaxify.data.uid, 10)}, (err, lists) => {
+        if (err) app.error(err)
+        if (!lists || !lists.length) app.error('Unable to get featured topic lists.')
+
+        openModal(lists)
+      })
+    }
+
+    function openModListSelect () {
+      if ($('#featured-topics-ex-modal').length) return app.error('Already editing featured topics.')
+
+      socket.emit('plugins.FeaturedTopicsExtended.getGlobalFeaturedLists', {}, (err, lists) => {
+        if (err) app.error(err)
+        if (!lists || !lists.length) app.error('Unable to get featured topic lists.')
+
+        openModal(lists)
+      })
+    }
+
+    function registerEventHandlers () {
+      $('[component="topic"]').on('click', '.thread-tools .mark-featured', openModListSelect)
+      $('[component="topic"]').on('click', '[component="mark-featured"]', openUserListSelect)
     }
 
     $(window).on('action:ajaxify.end', registerEventHandlers)
