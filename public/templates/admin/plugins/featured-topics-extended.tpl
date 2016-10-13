@@ -1,15 +1,11 @@
 <form id="fte-admin-page">
+  <!-- BEGIN lists -->
   <div class="panel panel-primary">
-    <div class="panel-heading"><span class="panel-title">Topics</span></div>
-    <div class="panel-body">
-      <div class="form-group">
-        <label for="autoFeature">Automatically feature new topics in these category IDs</label>
-        <input data-key="autoFeature" type="text" class="form-control" id="autoFeature" placeholder="1" />
-      </div>
-
-      <div id="resort" class="btn btn-success">Re-sort Featured Topics</div>
-    </div>
+    <div class="panel-heading"><span class="panel-title">{lists.name}</span></div>
   </div>
+  <!-- END lists -->
+
+  <button id="addList" type="button" class="btn btn-success">Create a new Featured Topic List</button>
 
   <div class="panel panel-primary">
     <div class="panel-heading"><span class="panel-title">News Page</span></div>

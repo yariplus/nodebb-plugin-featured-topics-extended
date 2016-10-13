@@ -41,7 +41,9 @@ export function init (params, next) {
   router.get('/api/admin/plugins/featured-topics-extended', renderAdmin)
 
   function renderAdmin(req, res, next) {
-    res.render('admin/plugins/featured-topics-extended', {})
+    getGlobalFeaturedLists((err, lists) => {
+      res.render('admin/plugins/featured-topics-extended', {lists: lists.map(list => ({name: list}))})
+    })
   }
 
   SocketAdmin.settings.syncFeaturedTopicsExtended = () => {
@@ -465,60 +467,20 @@ function getDate(timestamp){
 function render(req, res, next) {
   const payload       = {config: {relative_path: nconf.get('relative_path')}}
   const topicsPerPage = 5
-  const topicIndex    = 0
   const uid = req.uid
 
   if (!uid && settings.get('newsHideAnon')) return res.render('news', payload)
 
   async.waterfall([
-    async.apply(getFeaturedTopics, uid, 'Default List', 1, 5),
+    async.apply(getFeaturedTopics, uid, 'News Page', req.params.page || 1, topicsPerPage),
     (topicsData, next) => {
-      const topicCount  = topicsData.length
-      const pageCount   = Math.max(1, Math.ceil(topicCount / topicsPerPage))
-      let currentPage = parseInt(req.params.page, 10) || 1
-
-      if (currentPage < 1 || currentPage > pageCount) {
-        currentPage = 1
-      }
-
-      payload.nextpage = currentPage === pageCount ? false : currentPage + 1
-      payload.prevpage = currentPage === 1 ? false : currentPage - 1
-
-      payload.pages = []
-      for (let number = 1; number <= pageCount; number++) {
-        const _page = {number}
-        if (number === currentPage) _page.currentPage = true
-        payload.pages.push(_page)
-      }
-
-      payload.topics = []
-
-      const tids = []
-      for (let i = 0; i < topicsPerPage; i++) {
-        const x = (currentPage - 1)*5+i
-        if (topicsData[x]) {
-          payload.topics.push(topicsData[x])
-        }
-      }
-
-      if (currentPage === 1 && topicsData[0]) {
-        Topics.increaseViewCount(topicsData[0].tid)
-      }
+      payload.topics = topicsData
 
       payload.topics.forEach(topic => {
         topic.date = getDate(topic.timestamp)
         topic.replies = topic.postcount - 1
       })
 
-      payload.topics.sort(function compare(a, b) {
-        if (a.timestamp > b.timestamp) {
-          return -1
-        }
-        if (a.timestamp < b.timestamp) {
-          return 1
-        }
-        return 0
-      })
       next()
     }
   ], err => {
