@@ -440,6 +440,30 @@ export function addPostTools (data, callback) {
 // Hook action:topic.post
 // Auto-feature topics in the selected categories.
 export function topicPost (topicData) {
+  // TODO
+}
+
+// Hook filter:user.profileMenu
+// Add links to list management and blog.
+export function userProfileMenu (data, next) {
+  data.links = data.links.concat([
+    {
+      name: 'Featured Topic Lists',
+      id: 'fte-profilelink-featured',
+      public: false,
+      route: 'featured',
+      icon: 'fa-newspaper-o'
+    },
+    {
+      name: 'Blog',
+      id: 'fte-profilelink-blog',
+      public: true,
+      route: 'blog',
+      icon: 'fa-newspaper-o'
+    }
+  ])
+
+  next(null, data)
 }
 
 // Date parsing helper.
