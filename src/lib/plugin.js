@@ -3,6 +3,7 @@
 import async from 'async'
 import winston from 'winston'
 import tjs from 'templates.js'
+import validator from 'validator'
 
 const accountHelpers = require.main.require('./src/controllers/accounts/helpers')
 const helpers = require.main.require('./src/controllers/helpers')
@@ -111,12 +112,8 @@ export function init (params, next) {
 
       data.lists = lists
 
-      getFeaturedTopics(req.uid, theirid, lists[0], page, size, (err, topics) => {
-        data.topics = topics.map(topic => {
-          topic.humanDate = getDate(topic.timestamp)
-          return topic
-        })
-
+      getFeaturedTopics(req.uid, theirid, lists[0].name, page, size, (err, topics) => {
+        data.topics = topics
         next(null, data)
       })
     })
@@ -138,13 +135,12 @@ export function init (params, next) {
   SocketPlugins.FeaturedTopicsExtended = {}
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopics = (socket, data, next) => {
-    const {list} = data
     const {uid} = socket
 
-    let {theirid} = data
+    let {theirid, slug} = data
     theirid = parseInt(theirid, 10) || 0
 
-    getFeaturedTopics(uid, theirid, list, 1, 5, next)
+    getFeaturedTopicsBySlug(uid, theirid, slug, 1, 5, next)
   }
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopicsLists = (socket, data, next) => {
@@ -257,8 +253,27 @@ export function getFeaturedTopicsLists (uid, theirid, next) {
   // TODO: List access perms.
   async.waterfall([
     async.apply(createDefaultFeaturedList, theirid),
-    async.apply(db.getSortedSetRangeByScore, `fte:${theirid}:lists`, 0, 10000, 0, '+inf')
+    async.apply(db.getSortedSetRangeByScore, `fte:${theirid}:lists`, 0, 10000, 0, '+inf'),
+    (lists, next) => {
+      lists = lists.map(list => `fte:${theirid}:list:${list}`)
+      console.log('getting lists')
+      console.dir(lists)
+      next(null, lists)
+    },
+    async.apply(db.getObjects),
+    (lists, next) => {
+      lists = lists.map(list => {
+        list.userTitle = validator.escape(list.name)
+        return list
+      })
+      console.log('got lists')
+      console.dir(lists)
+      next(null, lists)
+    }
   ], next)
+}
+
+export function getFeaturedTopicsList (uid, theirid, listName, next) {
 }
 
 export function getFeaturedTopics (uid, theirid, list, page, size, next) {
@@ -268,6 +283,14 @@ export function getFeaturedTopics (uid, theirid, list, page, size, next) {
     async.apply(db.getSortedSetRevRangeByScore, `fte:${theirid}:list:${list}:tids`, page * size, page * size + size, '+inf', 0),
     async.apply(getTopicsWithMainPost, uid)
   ], next)
+}
+
+export function getFeaturedTopicsBySlug (uid, theirid, slug, page, size, next) {
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
+
+    getFeaturedTopics (uid, theirid, list, page, size, next)
+  })
 }
 
 // Create a blank default list.
@@ -305,6 +328,32 @@ function createList (theirid, list, next) {
   ], next)
 }
 
+function createList (theirid, list, next) {
+  theirid = parseInt(theirid, 10) || 0
+
+  const slug = Utils.slugify(list)
+
+  async.parallel([
+    async.apply(db.sortedSetRemove, `fte:${theirid}:lists`, list),
+    async.apply(db.sortedSetRemove, `fte:${theirid}:lists:bytopics`, list),
+    async.apply(db.sortedSetRemove, `fte:${theirid}:lists:byslug`, `${slug}:${list}`),
+    async.apply(db.deleteObjectField, `fte:${theirid}:lists:slugs`, slug),
+    async.apply(db.delete, `fte:${theirid}:list:${list}`),
+    function (next) {
+      db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, (err, cids) => {
+        if (err) return next(err)
+
+        async.parallel([
+          async.apply(async.each, cids, (cid, next) => {
+            db.sortedSetRemove(`fte:autofeature:${cid}`, list, next)
+          }),
+          async.apply(db.delete, `fte:${theirid}:list:${list}:autofeature`)
+        ], next)
+      })
+    }
+  ], next)
+}
+
 function isListValid (theirid, slug, next) {
   getListNameBySlug(theirid, slug, (err, list) => {
     next(list ? new Error('List already exists.') : err)
@@ -327,6 +376,8 @@ function getTopicsWithMainPost (uid, tids, cb) {
     async.forEachOf(topicsData, (topicData, i, next) => {
       Topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
         topicsData[i].post = mainPost
+        topicsData[i].humanDate = getDate(topicsData[i].timestamp)
+
         next()
       })
     }, () => {

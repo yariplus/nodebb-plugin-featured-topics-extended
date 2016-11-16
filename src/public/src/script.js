@@ -77,7 +77,7 @@ $(() => {
   })
 
   function setupEditor (theirid) {
-    $('.fte-btn-list-add').click(() => {
+    $('#fte-editor-list-add').click(() => {
       bootbox.prompt('Create a list', list => {
         if (!list) return
 
@@ -86,23 +86,42 @@ $(() => {
             app.alertError(err.message)
           } else {
             app.alertSuccess(`Created list <b>${list}</b>!`)
-            $('#fte-profile-list-select').append(`<option value="${list}">${list}</option>`)
+            $('#fte-editor-list-select').append(`<option value="${list}">${list}</option>`)
           }
         })
       })
     })
 
-    $('#fte-profile-list-select').change(function () {
-      const list = $(this).val()
+    $('#fte-editor-list-delete').click(() => {
+      let list = $('#fte-editor-list-select').val()
 
-      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, list}, (err, topics) => {
-        app.parseAndTranslate('partials/account/fte-topic-list', {topics, isSelf: ajaxify.data.isSelf}, html => {
+      bootbox.confirm(`Are you sure you want to delete the list <b>${list}</b>?`, confirm => {
+        if (!confirm) return
+
+        socket.emit('plugins.FeaturedTopicsExtended.deleteList', {theirid, list}, err => {
+          if (err) {
+            app.alertError(err.message)
+          } else {
+            app.alertSuccess(`Deleted list <b>${list}</b>!`)
+            $(`#fte-editor-list-select [value="${list}"]`).remove()
+            $(`#fte-editor-list-select`).val($(`#fte-editor-list-select option`).first().val())
+            $(`#fte-editor-list-select`).change()
+          }
+        })
+      })
+    })
+
+    $('#fte-editor-list-select').change(function () {
+      const slug = $(this).val()
+
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug}, (err, topics) => {
+        app.parseAndTranslate('partials/fte-topic-list', {topics, isSelf: ajaxify.data.isSelf}, html => {
           $('.fte-topic-list').html(html)
         })
       })
     })
 
-    $('#fte-profile-list-select').val($('#fte-profile-list-select [selected]').val())
+    $('#fte-editor-list-select').val($('#fte-editor-list-select [selected]').val())
   }
 
   define('forum/account/fte-blog', ['forum/account/header'], header => {
