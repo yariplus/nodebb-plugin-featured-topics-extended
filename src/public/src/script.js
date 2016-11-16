@@ -1,51 +1,105 @@
 $(() => {
   app.loadJQueryUI(() => {
-    function openModal (lists) {
-      lists = lists.map(list => `<option value="${list}">${list}</option>`).join('')
+    function openModal (theirid, lists) {
+      const {tid, title} = ajaxify.data
 
-      bootbox.dialog({
-        size: 'large',
-        title: 'Select a Featured Topic List',
-        message: `<form class="bootbox-form"><select class="bootbox-input bootbox-input-select form-control">${lists}</select></form><br><a>or click here to Manage your Featured Topic Lists</a>`,
-        show: true,
-        onEscape: true,
-        buttons: {
-          'cancel': { label: 'Cancel', className: 'btn-primary', callback: function () {} },
-          'accept': { label: 'Add Topic', className: 'btn-default', callback: function () {console.log($('.bootbox-input').val())} }
-        }
+      if (!tid) return console.log('No tid for featured topic modal.')
+
+      templates.parse('modals/fte-listselect', {lists, title}, (html) => {
+        bootbox.dialog({
+          size: 'large',
+          title: `Featuring topic: "${title}"`,
+          message: html,
+          show: true,
+          onEscape: true,
+          buttons: {
+            'cancel': {
+              label: 'Cancel',
+              className: 'btn-primary',
+              callback: () => {}
+            },
+            'accept': {
+              label: 'Add Topic',
+              className: 'btn-default',
+              callback: () => {
+                socket.emit('plugins.FeaturedTopicsExtended.featureTopic', {
+                  tid,
+                  theirid,
+                  list: $('#fte-topic-list-select').val()
+                }, err => {
+                  if (err) return app.alertError(err)
+
+                  app.alertSuccess('Featured Topic')
+                })
+              }
+            }
+          }
+        })
       })
     }
 
-    function openUserListSelect () {
-      if ($('#featured-topics-ex-modal').length) return app.error('Already editing featured topics.')
+    function openTopicsListModal (theirid) {
+      if ($('#featured-topics-ex-modal').length) return app.alertError('Already editing featured topics.')
 
-      socket.emit('plugins.FeaturedTopicsExtended.getUserFeaturedLists', {uid: parseInt(ajaxify.data.uid, 10)}, (err, lists) => {
-        if (err) app.error(err)
-        if (!lists || !lists.length) app.error('Unable to get featured topic lists.')
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopicsLists', {theirid}, (err, lists) => {
+        if (err) return app.alertError(err.message)
+        if (!lists || !lists.length) return app.alertError('Unable to get featured topic lists.')
 
-        openModal(lists)
-      })
-    }
-
-    function openModListSelect () {
-      if ($('#featured-topics-ex-modal').length) return app.error('Already editing featured topics.')
-
-      socket.emit('plugins.FeaturedTopicsExtended.getGlobalFeaturedLists', {}, (err, lists) => {
-        if (err) app.error(err)
-        if (!lists || !lists.length) app.error('Unable to get featured topic lists.')
-
-        openModal(lists)
+        openModal(theirid, lists)
       })
     }
 
     function registerEventHandlers () {
-      $('[component="topic"]').on('click', '.thread-tools .mark-featured', openModListSelect)
-      $('[component="topic"]').on('click', '[component="mark-featured"]', openUserListSelect)
+      $('[component="topic"]').on('click', '.thread-tools .mark-featured', () => {openTopicsListModal()})
+      $('[component="topic"]').on('click', '[component="mark-featured"]', () => {openTopicsListModal(app.user.uid)})
     }
 
     $(window).on('action:ajaxify.end', registerEventHandlers)
 
     registerEventHandlers()
+  })
+
+  define('forum/account/fte-featured', ['forum/account/header'], header => {
+    return {
+      init () {
+        header.init()
+        setupEditor(ajaxify.data.theirid)
+      }
+    }
+  })
+
+  define('forum/fte-featured', () => {
+    return {
+      init () {
+        header.init()
+        setupEditor()
+      }
+    }
+  })
+
+  function setupEditor (theirid) {
+    $('.fte-btn-list-add').click(() => {
+      bootbox.prompt('Create a list', list => {
+        if (!list) return
+
+        socket.emit('plugins.FeaturedTopicsExtended.createList', {theirid, list}, err => {
+          if (err) {
+            app.alertError(err.message)
+          } else {
+            app.alertSuccess(`Created list <b>${list}</b>!`)
+            $('#fte-profile-list-select').append(`<option value="${list}">${list}</option>`)
+          }
+        })
+      })
+    })
+  }
+
+  define('forum/account/fte-blog', ['forum/account/header'], header => {
+    return {
+      init () {
+        header.init()
+      }
+    }
   })
 })
 

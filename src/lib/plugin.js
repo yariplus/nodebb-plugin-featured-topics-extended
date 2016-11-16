@@ -4,6 +4,8 @@ import async from 'async'
 import winston from 'winston'
 import tjs from 'templates.js'
 
+const accountHelpers = require.main.require('./src/controllers/accounts/helpers')
+const helpers = require.main.require('./src/controllers/helpers')
 const Topics = require.main.require('./src/topics')
 const Posts = require.main.require('./src/posts')
 const db = require.main.require('./src/database')
@@ -13,12 +15,12 @@ const Settings = require.main.require('./src/settings')
 const User  = require.main.require('./src/user')
 const SocketAdmin = require.main.require('./src/socket.io/admin')
 const SocketPlugins = require.main.require('./src/socket.io/plugins')
+const Utils = require.main.require('./public/src/utils')
 
 const defaultSettings = {
-  newsTemplate     : 'porta',
-  newsHideAnon     : 0,
-  customTemplate   : '',
-  autoFeature      : '1'
+  newsTemplate: 'porta',
+  newsHideAnon: 0,
+  customTemplate: ''
 }
 
 let app, settings, autoFeature
@@ -29,19 +31,106 @@ export function init (params, next) {
   app = params.app
   settings = new Settings('featured-topics-extended', '1.0.0', defaultSettings, readSettings)
 
-  const router     = params.router
+  const router = params.router
   const middleware = params.middleware
 
-  router.get('/news',           middleware.buildHeader, render)
-  router.get('/news/:page',     middleware.buildHeader, render)
-  router.get('/api/news',       render)
+  router.get('/news', middleware.buildHeader, render)
+  router.get('/news/:page', middleware.buildHeader, render)
+  router.get('/api/news', render)
   router.get('/api/news/:page', render)
+
+  router.get('/featured', middleware.buildHeader, renderEditor)
+  router.get('/api/featured', middleware.buildHeader, renderEditor)
+
+  function renderEditor (req, res) {
+    const page = 1
+    const size = 10
+    let data = {}
+
+    User.isAdminOrGlobalMod(req.uid, (err, isAdminOrGlobalMod) => {
+      data.isSelf = isAdminOrGlobalMod
+
+      prepareEditor (req, res, theirid, userData, page, size, (err, data) => {
+        res.render('fte-featured', data)
+      })
+    })
+  }
+
+  router.get('/user/:userslug/blog', middleware.buildHeader, renderUserBlog)
+  router.get('/api/user/:userslug/blog', renderUserBlog)
+
+  function renderUserBlog (req, res) {
+    prepareAccountPage(req, 'account/fte-blog', 'Blog', (err, userData) => {
+      if (err) {
+        winston.error(err)
+        return res.redirect(`/user/${req.params.userslug}/`)
+      }
+
+      res.render('account/fte-blog', userData)
+    })
+  }
+
+  router.get('/user/:userslug/featured', middleware.buildHeader, renderUserFeatured)
+  router.get('/api/user/:userslug/featured', renderUserFeatured)
+
+  function renderUserFeatured (req, res) {
+    const page = 1
+    const size = 10
+
+    prepareAccountPage(req, 'account/fte-featured', 'Featured Topic Lists', (err, userData) => {
+      if (err) {
+        winston.error(err)
+        return res.redirect(`/user/${req.params.userslug}/`)
+      }
+
+      const {theirid} = userData
+
+      User.isAdminOrGlobalMod(req.uid, (err, isAdminOrGlobalMod) => {
+        userData.isSelf = isAdminOrGlobalMod
+
+        prepareEditor (req, res, theirid, userData, page, size, (err, data) => {
+          res.render('account/fte-featured', data)
+        })
+      })
+    })
+  }
+
+  function prepareAccountPage (req, tpl, name, next) {
+    accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, (err, userData) => {
+      if (err) return next(err)
+
+      userData.title = '[[pages:' + tpl + ', ' + userData.username + ']]'
+      userData.breadcrumbs = helpers.buildBreadcrumbs([{text: userData.username, url: '/user/' + userData.userslug}, {text: '[[user:' + name + ']]'}])
+
+      next(null, userData)
+    })
+  }
+
+  function prepareEditor (req, res, theirid, data, page, size, next) {
+    getFeaturedTopicsLists(req.uid, theirid, (err, lists) => {
+      if (err) {
+        winston.error(err)
+        return res.redirect(theirid ? `/user/${req.params.userslug}/` : '/')
+      }
+
+      data.lists = lists
+
+      getFeaturedTopics(req.uid, theirid, lists[0], page, size, (err, topics) => {
+        data.topics = topics.map(topic => {
+          topic.humanDate = getDate(topic.timestamp)
+          return topic
+        })
+
+        next(null, data)
+      })
+    })
+  }
 
   router.get('/admin/plugins/featured-topics-extended', middleware.admin.buildHeader, renderAdmin)
   router.get('/api/admin/plugins/featured-topics-extended', renderAdmin)
 
   function renderAdmin(req, res, next) {
-    getGlobalFeaturedLists((err, lists) => {
+    getFeaturedTopicsLists(req.uid, 0, (err, lists) => {
       res.render('admin/plugins/featured-topics-extended', {lists: lists.map(list => ({name: list}))})
     })
   }
@@ -52,29 +141,57 @@ export function init (params, next) {
 
   SocketPlugins.FeaturedTopicsExtended = {}
 
-  SocketPlugins.FeaturedTopicsExtended.getUserFeaturedLists = (socket, data, next) => {
-    getUserFeaturedLists(socket.uid, data.uid, next)
+  SocketPlugins.FeaturedTopicsExtended.getFeaturedTopics = (socket, data, next) => {
+    const {uid} = socket
+    let {theirid, list} = data
+
+    theirid = parseInt(theirid, 10) || 0
+
+    getFeaturedTopics(uid, theirid, list, next)
   }
 
-  SocketPlugins.FeaturedTopicsExtended.getGlobalFeaturedLists = (socket, data, next) => {
-    User.isAdminOrGlobalMod(socket.uid, (err, isAdminOrGlobalMod) => {
-      if (err || !isAdminOrGlobalMod) return callback(err || new Error('[[error:no-privileges]]'))
+  SocketPlugins.FeaturedTopicsExtended.getFeaturedTopicsLists = (socket, data, next) => {
+    const {uid} = socket
+    let {theirid} = data
 
-      getGlobalFeaturedLists(next)
-    })
+    theirid = parseInt(theirid, 10) || 0
+
+    getFeaturedTopicsLists(uid, theirid, next)
   }
 
   SocketPlugins.FeaturedTopicsExtended.featureTopic = (socket, data, next) => {
-    const isSelf = socket.uid === data.theirid
+    const {tid, theirid, list} = data
+    const {uid} = socket
+    const isSelf = uid === theirid
 
-    User.isAdminOrGlobalMod(socket.uid, (err, isAdminOrGlobalMod) => {
-      if (data.theirid) {
+    User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
+      if (err) return next(err)
+
+      if (theirid) { // User Featured List
         if (!(isSelf || isAdminOrGlobalMod)) return next(new Error(`Cannot change another user's featured topics.`))
-      } else {
-        if (!isAdminOrGlobalMod) return callback(err || new Error('[[error:no-privileges]]'))
+      } else { // Global List
+        if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
       }
 
-      featureTopic(data.tid, data.theirid, data.list, next)
+      featureTopic(theiridtid, list, next)
+    })
+  }
+
+  SocketPlugins.FeaturedTopicsExtended.createList = (socket, data, next) => {
+    const {theirid, list} = data
+    const {uid} = socket
+    let isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
+
+    User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
+      if (err) return next(err)
+
+      if (theirid) { // User Featured List
+        if (!(isSelf || isAdminOrGlobalMod)) return next(new Error(`Cannot change another user's featured topics lists.`))
+      } else { // Global List
+        if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
+      }
+
+      createList(theirid, list, next)
     })
   }
 
@@ -86,18 +203,16 @@ export function init (params, next) {
   db.exists(`featuredex:tids`, (err, exists) => {
     if (err || !exists) return next()
 
-    db.getSortedSetRangeByScore('featuredex:tids', 0, 100, 0, 100, (err, tids) => {
+    db.getSortedSetRangeByScore('featuredex:tids', 0, 10000, 0, '+inf', (err, tids) => {
       if (err || !tids || !tids.length) {
         return next()
       }
 
-      Topics.getTopicsFields(tids, ['tid', 'timestamp'], (err, topics) => {
-        if (err || !topics) return next()
+      createList(0, 'News', err => {
+        if (err) return next()
 
-        db.sortedSetAdd(`featuredex:featured`, topics.length, `News Page`)
-
-        async.each(topics, (topic, next) => {
-          db.sortedSetAdd(`featuredex:featured:News Page:topics`, topic.timestamp, topic.tid, next)
+        async.each(tids, (tid, next) => {
+          featureTopic(0, tid, 'News', next)
         }, err => {
           if (err) return next()
 
@@ -120,88 +235,85 @@ export function homepageGet (data, next) {
   next(null, data)
 }
 
-function featureTopic (tid, theirid, list, cb) {
-  let listkey = theirid ? `uid:${theirid}:featured` : `featuredex:featured`
-  let topicskey = theirid ? `uid:${theirid}:featured:${list}:topics` : `featuredex:featured:${list}:topics`
+function featureTopic (theirid, tid, list, next) {
+  const listkey = `fte:${theirid}:lists`
+  const topicskey = `fte:${theirid}:list:${list}:tids`
 
-  db.isSortedSetMember(listkey, list, (err, isMember) => {
-    if (err || !isMember) return cb(err || new Error(`List ${list} does not exist.`))
-
-    Topics.getTopicField(tid, 'timestamp', (err, timestamp) => {
-      if (err) return cb(err)
-
-      db.sortedSetAdd(topicskey, timestamp, tid, cb)
-    })
-  })
-}
-
-// Get lists made by admins or global mods.
-const getGlobalFeaturedLists = (cb) => {
-  db.getSortedSetRangeByScore('featuredex:featured', 0, 1000, 0, '+inf', (err, lists) => {
-    if (err || !lists) return cb(err)
-
-    if (!lists.length) {
-      createDefaultFeaturedList(0, (err) => {
-        if (err) return cb(err)
-
-        getGlobalFeaturedLists(cb)
-      })
-    } else {
-      cb(null, lists)
+  async.waterfall([
+    async.apply(db.isSortedSetMember, listkey, list),
+    (exists, next) => {
+      if (!exists) return next(new Error(`List ${list} does not exist.`))
+      next()
+    },
+    async.apply(Topics.getTopicField, tid, 'timestamp'),
+    (timestamp, next) => {
+      db.sortedSetAdd(topicskey, timestamp, tid, next)
     }
-  })
+  ], next)
 }
 
-// Get topics featured by admins or global mods.
-function getFeaturedTopics (uid, list, page, size, cb) {
+export function getFeaturedTopicsLists (uid, theirid, next) {
+  // TODO: List access perms.
+  async.waterfall([
+    async.apply(createDefaultFeaturedList, theirid),
+    async.apply(db.getSortedSetRangeByScore, `fte:${theirid}:lists`, 0, 10000, 0, '+inf')
+  ], next)
+}
+
+export function getFeaturedTopics (uid, theirid, list, page, size, next) {
   page--
 
-  db.getSortedSetRevRangeByScore(`featuredex:featured:${list}:topics`, page * size, page * size + size, '+inf', 0, (err, tids) => {
-    if (err) return cb(err)
-
-    getTopicsWithMainPost(uid, tids, (err, topicsData) => {
-      if (err) return cb(err)
-
-      cb(null, topicsData)
-    })
-  })
-}
-
-// Get user-featured lists.
-const getUserFeaturedLists = (uid, theirid, cb) => {
-  const isSelf = uid === theirid
-
-  db.getSortedSetRangeByScore(`uid:${theirid}:featured`, 0, 1000, 0, '+inf', (err, lists) => {
-    if (err || !lists) return cb(err)
-
-    if (isSelf && !lists.length) {
-      createDefaultFeaturedList(theirid, (err) => {
-        if (err) return cb(err)
-
-        getUserFeaturedLists(uid, theirid, cb)
-      })
-    } else {
-      cb(null, lists)
-    }
-  })
-}
-
-// Get user-featured topics.
-function getUserFeaturedTopics (uid, theirid, list, page, size, cb) {
-  db.getSortedSetRevRangeByScore(`uid:${theirid}:featured:${list}:topics`, page * size, page * size + size, '+inf', 0, (err, tids) => {
-    if (err) return cb(err)
-
-    getTopicsWithMainPost(uid, tids, (err, topicsData) => {
-      if (err) return cb(err)
-
-      cb(null, topicsData)
-    })
-  })
+  async.waterfall([
+    async.apply(db.getSortedSetRevRangeByScore, `fte:${theirid}:list:${list}:tids`, page * size, page * size + size, '+inf', 0),
+    async.apply(getTopicsWithMainPost, uid)
+  ], next)
 }
 
 // Create a blank default list.
 function createDefaultFeaturedList (theirid, next) {
-  db.sortedSetAdd(theirid ? `uid:${theirid}:featured` : `featuredex:featured`, Date.now(), 'Default List', next)
+  theirid = parseInt(theirid, 10) || 0
+
+  const key = `fte:${theirid}:lists`
+  const list = theirid ? 'Blog' : 'News'
+
+  db.sortedSetScore(key, list, (err, score) => {
+    if (err) return next(err)
+    if (!score) return createList(theirid, list, next)
+    next()
+  })
+}
+
+function createList (theirid, list, next) {
+  theirid = parseInt(theirid, 10) || 0
+
+  const slug = Utils.slugify(list)
+  const created = Date.now()
+
+  async.waterfall([
+    async.apply(isListValid, theirid, slug),
+    async.apply(db.sortedSetAdd, `fte:${theirid}:lists`, created, list),
+    async.apply(db.sortedSetAdd, `fte:${theirid}:lists:bytopics`, 0, list),
+    async.apply(db.sortedSetAdd, `fte:${theirid}:lists:byslug`, 0, `${slug}:${list}`),
+    async.apply(db.setObjectField, `fte:${theirid}:lists:slugs`, slug, list),
+    async.apply(db.setObject, `fte:${theirid}:list:${list}`, {
+      name: list,
+      topics: 0,
+      slug,
+      created
+    })
+  ], next)
+}
+
+function isListValid (theirid, slug, next) {
+  getListNameBySlug(theirid, slug, (err, list) => {
+    next(list ? new Error('List already exists.') : err)
+  })
+}
+
+function getListNameBySlug (theirid, slug, next) {
+  const key = `fte:${theirid}:lists:slugs`
+
+  db.getObjectField(key, slug, next)
 }
 
 // Filter an array of topics and add the main post.
@@ -311,21 +423,21 @@ export function getWidgets (widgets, callback) {
 
 // Hook filter:widget.render:featuredTopicsExSidebar
 export function renderFeaturedTopicsSidebar (widget, callback) {
-  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
     app.render('widgets/featured-topics-ex-sidebar', {topics: featuredTopics}, callback)
   })
 }
 
 // Hook filter:widget.render:featuredTopicsExBlocks
 export function renderFeaturedTopicsBlocks (widget, callback) {
-  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
     app.render('widgets/featured-topics-ex-blocks', {topics: featuredTopics}, callback)
   })
 }
 
 // Hook filter:widget.render:featuredTopicsExCards
 export function renderFeaturedTopicsCards (widget, callback) {
-  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
       Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
@@ -345,7 +457,7 @@ export function renderFeaturedTopicsCards (widget, callback) {
 
 // Hook filter:widget.render:featuredTopicsExList
 export function renderFeaturedTopicsList (widget, callback) {
-  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
     async.each(featuredTopics, (topic, next) => {
       Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
         topic.posts = posts
@@ -365,7 +477,7 @@ export function renderFeaturedTopicsList (widget, callback) {
 // Hook filter:widget.render:featuredTopicsExNews
 // TODO
 export function renderFeaturedTopicsNews (widget, callback) {
-  getFeaturedTopics(widget.uid, 'Default List', 1, 5, (err, featuredTopics) => {
+  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
     app.render('news', {}, (err, html) => {
       translator.translate(html, translatedHTML => {
         callback(err, translatedHTML)
@@ -469,7 +581,7 @@ export function userProfileMenu (data, next) {
 // Date parsing helper.
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const days   = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-function getDate(timestamp){
+function getDate (timestamp) {
   let date = new Date(parseInt(timestamp, 10))
   const hours = date.getHours()
   date = {
@@ -488,7 +600,7 @@ function getDate(timestamp){
 }
 
 // Render the news.
-function render(req, res, next) {
+function render (req, res, next) {
   const payload       = {config: {relative_path: nconf.get('relative_path')}}
   const topicsPerPage = 5
   const uid = req.uid
@@ -496,7 +608,7 @@ function render(req, res, next) {
   if (!uid && settings.get('newsHideAnon')) return res.render('news', payload)
 
   async.waterfall([
-    async.apply(getFeaturedTopics, uid, 'News Page', req.params.page || 1, topicsPerPage),
+    async.apply(getFeaturedTopics, uid, 0, 'News', req.params.page || 1, topicsPerPage),
     (topicsData, next) => {
       payload.topics = topicsData
 
@@ -519,7 +631,7 @@ function render(req, res, next) {
           res.render('news', res.locals.isAPI ? payload : {newsTemplate: translatedHTML})
         })
       })
-    }else{
+    } else {
       const parsed = tjs.parse(settings.get('customTemplate'), payload)
       translator.translate(parsed, translatedHTML => {
         translatedHTML = translatedHTML.replace('&#123;', '{').replace('&#125;', '}')
