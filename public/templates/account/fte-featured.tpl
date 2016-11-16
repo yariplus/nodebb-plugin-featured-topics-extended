@@ -3,7 +3,10 @@
   <!-- IMPORT partials/account/header.tpl -->
 
   <!-- IF isSelf -->
-  <button class="fte-btn-list-add btn btn-primary" type="button" style="float:right;">Create New List</button>
+  <div class="clearfix">
+    <button id="fte-editor-delete" class="btn btn-danger pull-right">Delete List</button>
+    <button id="fte-editor-new" class="btn btn-primary pull-right">New List</button>
+  </div>
   <!-- ENDIF isSelf -->
 
   <div class="row">
@@ -22,8 +25,9 @@
           <thead>
             <tr>
               <th>Topic</th>
-              <th>Category</th>
-              <th>Date</th>
+              <th class="fte-m16">Category</th>
+              <th class="fte-m16">Date</th>
+              <th class="fte-w1" <!-- IF !isSelf -->style="display:none;"<!-- ENDIF !isSelf -->></th>
             </tr>
           </thead>
           <tbody class="fte-topic-list">
@@ -31,7 +35,7 @@
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3">
+              <td colspan="4">
                 <button class="btn btn-default" type="button" style="float:left;">&lt;</button>
                 <button class="btn btn-default" type="button" style="float:right;">&gt;</button>
               </td>

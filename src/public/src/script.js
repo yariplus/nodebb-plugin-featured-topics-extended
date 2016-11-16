@@ -96,9 +96,7 @@ $(() => {
       const list = $(this).val()
 
       socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, list}, (err, topics) => {
-        console.log(err)
-        console.log(topics)
-        app.parseAndTranslate('partials/account/fte-topic-list', {topics}, html => {
+        app.parseAndTranslate('partials/account/fte-topic-list', {topics, isSelf: ajaxify.data.isSelf}, html => {
           $('.fte-topic-list').html(html)
         })
       })
