@@ -71,7 +71,6 @@ $(() => {
   define('forum/fte-featured', () => {
     return {
       init () {
-        header.init()
         setupEditor()
       }
     }
@@ -92,6 +91,20 @@ $(() => {
         })
       })
     })
+
+    $('#fte-profile-list-select').change(function () {
+      const list = $(this).val()
+
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, list}, (err, topics) => {
+        console.log(err)
+        console.log(topics)
+        app.parseAndTranslate('partials/account/fte-topic-list', {topics}, html => {
+          $('.fte-topic-list').html(html)
+        })
+      })
+    })
+
+    $('#fte-profile-list-select').val($('#fte-profile-list-select [selected]').val())
   }
 
   define('forum/account/fte-blog', ['forum/account/header'], header => {

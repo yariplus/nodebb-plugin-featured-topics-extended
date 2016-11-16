@@ -40,7 +40,7 @@ export function init (params, next) {
   router.get('/api/news/:page', render)
 
   router.get('/featured', middleware.buildHeader, renderEditor)
-  router.get('/api/featured', middleware.buildHeader, renderEditor)
+  router.get('/api/featured', renderEditor)
 
   function renderEditor (req, res) {
     const page = 1
@@ -50,7 +50,7 @@ export function init (params, next) {
     User.isAdminOrGlobalMod(req.uid, (err, isAdminOrGlobalMod) => {
       data.isSelf = isAdminOrGlobalMod
 
-      prepareEditor (req, res, theirid, userData, page, size, (err, data) => {
+      prepareEditor (req, res, 0, data, page, size, (err, data) => {
         res.render('fte-featured', data)
       })
     })
@@ -85,12 +85,8 @@ export function init (params, next) {
 
       const {theirid} = userData
 
-      User.isAdminOrGlobalMod(req.uid, (err, isAdminOrGlobalMod) => {
-        userData.isSelf = isAdminOrGlobalMod
-
-        prepareEditor (req, res, theirid, userData, page, size, (err, data) => {
-          res.render('account/fte-featured', data)
-        })
+      prepareEditor (req, res, theirid, userData, page, size, (err, data) => {
+        res.render('account/fte-featured', data)
       })
     })
   }
@@ -142,12 +138,13 @@ export function init (params, next) {
   SocketPlugins.FeaturedTopicsExtended = {}
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopics = (socket, data, next) => {
+    const {list} = data
     const {uid} = socket
-    let {theirid, list} = data
 
+    let {theirid} = data
     theirid = parseInt(theirid, 10) || 0
 
-    getFeaturedTopics(uid, theirid, list, next)
+    getFeaturedTopics(uid, theirid, list, 1, 5, next)
   }
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopicsLists = (socket, data, next) => {
@@ -160,9 +157,12 @@ export function init (params, next) {
   }
 
   SocketPlugins.FeaturedTopicsExtended.featureTopic = (socket, data, next) => {
-    const {tid, theirid, list} = data
+    const {tid, list} = data
     const {uid} = socket
     const isSelf = uid === theirid
+
+    let {theirid} = data
+    theirid = parseInt(theirid, 10) || 0
 
     User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
       if (err) return next(err)
@@ -173,7 +173,7 @@ export function init (params, next) {
         if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
       }
 
-      featureTopic(theiridtid, list, next)
+      featureTopic(theirid, tid, list, next)
     })
   }
 
@@ -239,6 +239,7 @@ function featureTopic (theirid, tid, list, next) {
   const listkey = `fte:${theirid}:lists`
   const topicskey = `fte:${theirid}:list:${list}:tids`
 
+  console.log(`Featuring ${tid} on ${topicskey} in ${listkey}`)
   async.waterfall([
     async.apply(db.isSortedSetMember, listkey, list),
     (exists, next) => {
