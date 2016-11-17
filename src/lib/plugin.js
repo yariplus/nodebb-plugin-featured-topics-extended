@@ -201,7 +201,7 @@ export function init (params, next) {
   }
 
   SocketPlugins.FeaturedTopicsExtended.setAutoFeature = (socket, data, next) => {
-    let {theirid, list, autoFeature} = data
+    let {theirid, slug, autoFeature} = data
     const {uid} = socket
     let isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
 
@@ -217,7 +217,7 @@ export function init (params, next) {
         if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
       }
 
-      setAutoFeature(theirid, list, autoFeature, next)
+      setAutoFeature(theirid, slug, autoFeature, next)
     })
   }
 
@@ -314,7 +314,7 @@ export function getFeaturedTopicsList (uid, theirid, list, next) {
 
     list.userTitle = validator.escape(list.name)
 
-    db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, (err, autoFeature) => {
+    db.getSortedSetRange(`fte:${theirid}:list:${list.name}:autofeature`, 0, -1, (err, autoFeature) => {
       if (err) return next(err)
 
       list.autoFeature = autoFeature
@@ -465,12 +465,14 @@ function setAutoFeature (theirid, slug, autoFeature, next) {
       ], (err) => {
         if (err) return next(err)
 
-        async.parallel([
-          async.apply(async.each, autoFeature, (cid, next) => {
-            db.sortedSetAdd(`fte:autofeature:${cid}`, 0, list, next)
-          }),
-          async.apply(db.sortedSetAdd, `fte:${theirid}:list:${list}:autofeature`, 0, cid)
-        ])
+        async.each(autoFeature, (cid, next) => {
+          if (!cid) return next()
+
+          async.parallel([
+            async.apply(db.sortedSetAdd, `fte:autofeature:${cid}`, 0, list, next),
+            async.apply(db.sortedSetAdd, `fte:${theirid}:list:${list}:autofeature`, 0, cid)
+          ], next)
+        }, next)
       })
     })
   })

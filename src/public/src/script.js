@@ -99,14 +99,12 @@ $(() => {
         if (!confirm) return
 
         socket.emit('plugins.FeaturedTopicsExtended.deleteList', {theirid, list}, err => {
-          if (err) {
-            app.alertError(err.message)
-          } else {
-            app.alertSuccess(`Deleted list <b>${list}</b>!`)
-            $(`#fte-editor-list-select [value="${list}"]`).remove()
-            $(`#fte-editor-list-select`).val($(`#fte-editor-list-select option`).first().val())
-            $(`#fte-editor-list-select`).change()
-          }
+          if (err) return app.alertError(err.message)
+
+          app.alertSuccess(`Deleted list <b>${list}</b>!`)
+          $(`#fte-editor-list-select [value="${list}"]`).remove()
+          $(`#fte-editor-list-select`).val($(`#fte-editor-list-select option`).first().val())
+          $(`#fte-editor-list-select`).change()
         })
       })
     })
@@ -115,15 +113,29 @@ $(() => {
       const slug = $(this).val()
 
       socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug}, (err, data) => {
+        if (err) return app.alertError(err.message)
+
         app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
           $('.fte-topic-list').html(html)
         })
 
-        $('#fte-editor-list-autofeature').val(data.list.autoFeature)
+        $('#fte-editor-list-autofeature').val(data.list.autoFeature.join(','))
+      })
+    })
+
+    $('#fte-editor-list-autofeature-save').click(function () {
+      const autoFeature = $('#fte-editor-list-autofeature').val()
+      const slug = $('#fte-editor-list-select').val()
+
+      socket.emit('plugins.FeaturedTopicsExtended.setAutoFeature', {theirid, slug, autoFeature}, (err, data) => {
+        if (err) return app.alertError(err.message)
+
+        app.alertSuccess('Save auto feature')
       })
     })
 
     $('#fte-editor-list-select').val($('#fte-editor-list-select [selected]').val())
+    $('#fte-editor-list-autofeature').val(ajaxify.data.list.autoFeature.join(','))
   }
 
   define('forum/account/fte-blog', ['forum/account/header'], header => {
