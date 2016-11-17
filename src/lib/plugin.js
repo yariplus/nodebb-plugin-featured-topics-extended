@@ -290,7 +290,8 @@ function featureTopic (theirid, tid, list, next) {
   const listkey = `fte:${theirid}:lists`
   const topicskey = `fte:${theirid}:list:${list}:tids`
 
-  console.log(`Featuring ${tid} on ${topicskey} in ${listkey}`)
+  winston.info(`Featuring ${tid} on ${topicskey} in ${listkey}`)
+
   async.waterfall([
     async.apply(db.isSortedSetMember, listkey, list),
     (exists, next) => {
@@ -299,9 +300,19 @@ function featureTopic (theirid, tid, list, next) {
     },
     async.apply(Topics.getTopicField, tid, 'timestamp'),
     (timestamp, next) => {
+      db.sortedSetAdd(`tid:${tid}:featured`, 0, `${theirid}:${list}`)
       db.sortedSetAdd(topicskey, timestamp, tid, next)
     }
   ], next)
+}
+
+function unfeatureTopic (theirid, tid, list, next) {
+  const topicskey = `fte:${theirid}:list:${list}:tids`
+
+  winston.info(`Unfeaturing ${tid} on ${topicskey}`)
+
+  db.sortedSetRemove(`tid:${tid}:featured`, `${theirid}:${list}`)
+  db.sortedSetRemove(topicskey, tid, next)
 }
 
 export function getFeaturedTopicsLists (uid, theirid, next) {
@@ -737,6 +748,27 @@ export function topicPost (topicData) {
       const list = datum[1]
 
       featureTopic(theirid, tid, list, next)
+    })
+  })
+}
+
+// Hook action:topic.delete
+// Auto-feature topics in the selected categories.
+export function topicDelete (topicData) {
+  const {tid} = topicData
+
+  db.getSortedSetRange(`tid:${tid}:featured`, 0, -1, (err, data) => {
+    if (err) return winston.warn(err.message)
+
+    async.each(data, (datum, next) => {
+      datum = datum.split(':')
+
+      if (datum.length !== 2) return
+
+      const theirid = datum[0]
+      const list = datum[1]
+
+      unfeatureTopic(theirid, tid, list, next)
     })
   })
 }

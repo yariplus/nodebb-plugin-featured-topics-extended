@@ -18,6 +18,7 @@
     { "hook": "filter:topic.thread_tools", "method": "addThreadTools" },
     { "hook": "filter:post.tools", "method": "addPostTools" },
     { "hook": "action:topic.post", "method": "topicPost" },
+    { "hook": "action:topic.delete", "method": "topicDelete" },
     { "hook": "filter:user.profileMenu", "method": "userProfileMenu" }
   ],
   "staticDirs": {
