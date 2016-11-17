@@ -137,8 +137,8 @@ export function init (params, next) {
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopics = (socket, data, next) => {
     const {uid} = socket
-
     let {theirid, slug} = data
+
     theirid = parseInt(theirid, 10) || 0
 
     getFeaturedTopicsBySlug(uid, theirid, slug, 1, 5, (err, topics) => {
@@ -165,8 +165,8 @@ export function init (params, next) {
     const {tid, list} = data
     const {uid} = socket
     const isSelf = uid === theirid
-
     let {theirid} = data
+
     theirid = parseInt(theirid, 10) || 0
 
     User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
@@ -183,9 +183,11 @@ export function init (params, next) {
   }
 
   SocketPlugins.FeaturedTopicsExtended.createList = (socket, data, next) => {
-    const {theirid, list} = data
     const {uid} = socket
+    let {theirid, list} = data
     let isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
+
+    theirid = parseInt(theirid, 10) || 0
 
     User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
       if (err) return next(err)
@@ -200,11 +202,34 @@ export function init (params, next) {
     })
   }
 
-  SocketPlugins.FeaturedTopicsExtended.setAutoFeature = (socket, data, next) => {
-    let {theirid, slug, autoFeature} = data
+  SocketPlugins.FeaturedTopicsExtended.deleteList = (socket, data, next) => {
     const {uid} = socket
+    let {theirid, slug} = data
     let isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
 
+    theirid = parseInt(theirid, 10) || 0
+
+    User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
+      if (err) return next(err)
+
+      if (theirid) { // User Featured List
+        if (slug === 'blog') return next(new Error(`Cannot delete the list Blog.`))
+        if (!isSelf) return next(new Error(`Cannot change another user's featured topics lists.`))
+      } else { // Global List
+        if (slug === 'news') return next(new Error(`Cannot delete the list News.`))
+        if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
+      }
+
+      deleteList(theirid, slug, next)
+    })
+  }
+
+  SocketPlugins.FeaturedTopicsExtended.setAutoFeature = (socket, data, next) => {
+    const {uid} = socket
+    let {theirid, slug, autoFeature} = data
+    let isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
+
+    theirid = parseInt(theirid, 10) || 0
     autoFeature = typeof autoFeature === 'string' ? autoFeature : ''
     autoFeature = autoFeature.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
 
@@ -384,30 +409,32 @@ function createList (theirid, list, next) {
   ], next)
 }
 
-function createList (theirid, list, next) {
+function deleteList (theirid, slug, next) {
   theirid = parseInt(theirid, 10) || 0
 
-  const slug = Utils.slugify(list)
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
 
-  async.parallel([
-    async.apply(db.sortedSetRemove, `fte:${theirid}:lists`, list),
-    async.apply(db.sortedSetRemove, `fte:${theirid}:lists:bytopics`, list),
-    async.apply(db.sortedSetRemove, `fte:${theirid}:lists:byslug`, `${slug}:${list}`),
-    async.apply(db.deleteObjectField, `fte:${theirid}:lists:slugs`, slug),
-    async.apply(db.delete, `fte:${theirid}:list:${list}`),
-    function (next) {
-      db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, (err, cids) => {
-        if (err) return next(err)
+    async.parallel([
+      async.apply(db.sortedSetRemove, `fte:${theirid}:lists`, list),
+      async.apply(db.sortedSetRemove, `fte:${theirid}:lists:bytopics`, list),
+      async.apply(db.sortedSetRemove, `fte:${theirid}:lists:byslug`, `${slug}:${list}`),
+      async.apply(db.deleteObjectField, `fte:${theirid}:lists:slugs`, slug),
+      async.apply(db.delete, `fte:${theirid}:list:${list}`),
+      function (next) {
+        db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, (err, cids) => {
+          if (err) return next(err)
 
-        async.parallel([
-          async.apply(async.each, cids, (cid, next) => {
-            db.sortedSetRemove(`fte:autofeature:${cid}`, list, next)
-          }),
-          async.apply(db.delete, `fte:${theirid}:list:${list}:autofeature`)
-        ], next)
-      })
-    }
-  ], next)
+          async.parallel([
+            async.apply(async.each, cids, (cid, next) => {
+              db.sortedSetRemove(`fte:autofeature:${cid}`, list, next)
+            }),
+            async.apply(db.delete, `fte:${theirid}:list:${list}:autofeature`)
+          ], next)
+        })
+      }
+    ], next)
+  })
 }
 
 function isListValid (theirid, slug, next) {
@@ -696,7 +723,7 @@ export function addPostTools (data, callback) {
 // Hook action:topic.post
 // Auto-feature topics in the selected categories.
 export function topicPost (topicData) {
-  // TODO
+  console.log(topicData)
 }
 
 // Hook filter:user.profileMenu

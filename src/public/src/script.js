@@ -93,16 +93,18 @@ $(() => {
     })
 
     $('#fte-editor-list-delete').click(() => {
-      let list = $('#fte-editor-list-select').val()
+      const slug = $('#fte-editor-list-select').val()
+      const list = $(`option[value="${slug}"]`).text()
 
       bootbox.confirm(`Are you sure you want to delete the list <b>${list}</b>?`, confirm => {
         if (!confirm) return
 
-        socket.emit('plugins.FeaturedTopicsExtended.deleteList', {theirid, list}, err => {
+        socket.emit('plugins.FeaturedTopicsExtended.deleteList', {theirid, slug}, err => {
           if (err) return app.alertError(err.message)
 
           app.alertSuccess(`Deleted list <b>${list}</b>!`)
-          $(`#fte-editor-list-select [value="${list}"]`).remove()
+
+          $(`#fte-editor-list-select [value="${slug}"]`).remove()
           $(`#fte-editor-list-select`).val($(`#fte-editor-list-select option`).first().val())
           $(`#fte-editor-list-select`).change()
         })
