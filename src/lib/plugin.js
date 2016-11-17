@@ -486,7 +486,7 @@ function setAutoFeature (theirid, slug, autoFeature, next) {
 
       async.parallel([
         async.apply(async.each, cids, (cid, next) => {
-          db.sortedSetRemove(`fte:autofeature:${cid}`, list, next)
+          db.sortedSetRemove(`fte:autofeature:${cid}`, `${theirid}:${list}`, next)
         }),
         async.apply(db.delete, `fte:${theirid}:list:${list}:autofeature`)
       ], (err) => {
@@ -496,7 +496,7 @@ function setAutoFeature (theirid, slug, autoFeature, next) {
           if (!cid) return next()
 
           async.parallel([
-            async.apply(db.sortedSetAdd, `fte:autofeature:${cid}`, 0, list, next),
+            async.apply(db.sortedSetAdd, `fte:autofeature:${cid}`, 0, `${theirid}:${list}`, next),
             async.apply(db.sortedSetAdd, `fte:${theirid}:list:${list}:autofeature`, 0, cid)
           ], next)
         }, next)
@@ -723,7 +723,22 @@ export function addPostTools (data, callback) {
 // Hook action:topic.post
 // Auto-feature topics in the selected categories.
 export function topicPost (topicData) {
-  console.log(topicData)
+  const {tid, cid} = topicData
+
+  db.getSortedSetRange(`fte:autofeature:${cid}`, 0, -1, (err, data) => {
+    if (err) return winston.warn(err.message)
+
+    async.each(data, (datum, next) => {
+      datum = datum.split(':')
+
+      if (datum.length !== 2) return
+
+      const theirid = datum[0]
+      const list = datum[1]
+
+      featureTopic(theirid, tid, list, next)
+    })
+  })
 }
 
 // Hook filter:user.profileMenu
