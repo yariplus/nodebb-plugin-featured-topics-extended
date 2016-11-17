@@ -162,10 +162,11 @@ export function init (params, next) {
   }
 
   SocketPlugins.FeaturedTopicsExtended.featureTopic = (socket, data, next) => {
-    const {tid, list} = data
+    const {tid, slug} = data
     const {uid} = socket
-    const isSelf = uid === theirid
     let {theirid} = data
+
+    const isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
 
     theirid = parseInt(theirid, 10) || 0
 
@@ -178,7 +179,7 @@ export function init (params, next) {
         if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
       }
 
-      featureTopic(theirid, tid, list, next)
+      featureTopic(theirid, tid, slug, next)
     })
   }
 
@@ -286,33 +287,45 @@ export function homepageGet (data, next) {
   next(null, data)
 }
 
-function featureTopic (theirid, tid, list, next) {
-  const listkey = `fte:${theirid}:lists`
-  const topicskey = `fte:${theirid}:list:${list}:tids`
+function featureTopic (theirid, tid, slug, next) {
+  slug = Utils.slugify(slug)
 
-  winston.info(`Featuring ${tid} on ${topicskey} in ${listkey}`)
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
 
-  async.waterfall([
-    async.apply(db.isSortedSetMember, listkey, list),
-    (exists, next) => {
-      if (!exists) return next(new Error(`List ${list} does not exist.`))
-      next()
-    },
-    async.apply(Topics.getTopicField, tid, 'timestamp'),
-    (timestamp, next) => {
-      db.sortedSetAdd(`tid:${tid}:featured`, 0, `${theirid}:${list}`)
-      db.sortedSetAdd(topicskey, timestamp, tid, next)
-    }
-  ], next)
+    const listkey = `fte:${theirid}:lists`
+    const topicskey = `fte:${theirid}:list:${list}:tids`
+
+    winston.info(`Featuring ${tid} on ${topicskey} in ${listkey}`)
+
+    async.waterfall([
+      async.apply(db.isSortedSetMember, listkey, list),
+      (exists, next) => {
+        if (!exists) return next(new Error(`List ${list} does not exist.`))
+        next()
+      },
+      async.apply(Topics.getTopicField, tid, 'timestamp'),
+      (timestamp, next) => {
+        db.sortedSetAdd(`tid:${tid}:featured`, 0, `${theirid}:${list}`)
+        db.sortedSetAdd(topicskey, timestamp, tid, next)
+      }
+    ], next)
+  })
 }
 
-function unfeatureTopic (theirid, tid, list, next) {
-  const topicskey = `fte:${theirid}:list:${list}:tids`
+function unfeatureTopic (theirid, tid, slug, next) {
+  slug = Utils.slugify(slug)
 
-  winston.info(`Unfeaturing ${tid} on ${topicskey}`)
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
 
-  db.sortedSetRemove(`tid:${tid}:featured`, `${theirid}:${list}`)
-  db.sortedSetRemove(topicskey, tid, next)
+    const topicskey = `fte:${theirid}:list:${list}:tids`
+
+    winston.info(`Unfeaturing ${tid} on ${topicskey}`)
+
+    db.sortedSetRemove(`tid:${tid}:featured`, `${theirid}:${list}`)
+    db.sortedSetRemove(topicskey, tid, next)
+  })
 }
 
 export function getFeaturedTopicsLists (uid, theirid, next) {
@@ -604,68 +617,104 @@ export function getWidgets (widgets, callback) {
 }
 
 // Hook filter:widget.render:featuredTopicsExSidebar
-export function renderFeaturedTopicsSidebar (widget, callback) {
-  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
-    app.render('widgets/featured-topics-ex-sidebar', {topics: featuredTopics}, callback)
-  })
+export function renderFeaturedTopicsSidebar (widget, next) {
+  const {slug, sorted, max, sortby} = widget.data
+  const {uid} = widget
+
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, render)
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+  }
+
+  function render (err, topics) {
+    app.render('widgets/featured-topics-ex-sidebar', {topics}, next)
+  }
 }
 
 // Hook filter:widget.render:featuredTopicsExBlocks
-export function renderFeaturedTopicsBlocks (widget, callback) {
-  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
-    app.render('widgets/featured-topics-ex-blocks', {topics: featuredTopics}, callback)
-  })
+export function renderFeaturedTopicsBlocks (widget, next) {
+  const {slug, sorted, max, sortby} = widget.data
+  const {uid} = widget
+
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, render)
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+  }
+
+  function render (err, topics) {
+    app.render('widgets/featured-topics-ex-blocks', {topics}, next)
+  }
 }
 
 // Hook filter:widget.render:featuredTopicsExCards
-export function renderFeaturedTopicsCards (widget, callback) {
-  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
-    async.each(featuredTopics, (topic, next) => {
-      Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
+export function renderFeaturedTopicsCards (widget, next) {
+  const {slug, sorted, max, sortby} = widget.data
+  const {uid} = widget
+
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, render)
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+  }
+
+  function render (err, topics) {
+    async.each(topics, (topic, next) => {
+      const {tid} = topic
+
+      Topics.getTopicPosts(tid, `tid:${tid}:posts`, 0, 4, uid, true, (err, posts) => {
         topic.posts = posts
         next(err)
       })
     }, err => {
-      widget.data.topics = featuredTopics
+      widget.data.topics = topics
       widget.data.backgroundSize = widget.data.backgroundSize || 'cover'
       widget.data.backgroundPosition = widget.data.backgroundPosition || 'center'
       widget.data.backgroundOpacity = widget.data.backgroundOpacity || '1.0'
       widget.data.textShadow = widget.data.textShadow || 'none'
-      app.render('widgets/featured-topics-ex-cards', widget.data, callback)
-    })
 
-  })
+      app.render('widgets/featured-topics-ex-cards', widget.data, next)
+    })
+  }
 }
 
 // Hook filter:widget.render:featuredTopicsExList
-export function renderFeaturedTopicsList (widget, callback) {
-  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
-    async.each(featuredTopics, (topic, next) => {
-      Topics.getTopicPosts(topic.tid, `tid:${topic.tid}:posts`, 0, 4, widget.uid, true, (err, posts) => {
+export function renderFeaturedTopicsList (widget, next) {
+  const {slug, sorted, max, sortby} = widget.data
+  const {uid} = widget
+
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, render)
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+  }
+
+  function render (err, topics) {
+    async.each(topics, (topic, next) => {
+      const {tid} = topic
+
+      Topics.getTopicPosts(tid, `tid:${tid}:posts`, 0, 4, uid, true, (err, posts) => {
         topic.posts = posts
         next(err)
       })
     }, err => {
-      app.render('widgets/featured-topics-ex-list', {topics:featuredTopics}, (err, html) => {
+      app.render('widgets/featured-topics-ex-list', {topics}, (err, html) => {
         translator.translate(html, translatedHTML => {
-          callback(err, translatedHTML)
+          next(err, translatedHTML)
         })
       })
     })
-
-  })
+  }
 }
 
 // Hook filter:widget.render:featuredTopicsExNews
-// TODO
 export function renderFeaturedTopicsNews (widget, callback) {
-  getFeaturedTopics(widget.uid, 0, widget.list, 1, 5, (err, featuredTopics) => {
-    app.render('news', {}, (err, html) => {
-      translator.translate(html, translatedHTML => {
-        callback(err, translatedHTML)
-      })
-    })
-  })
+  // TODO
 }
 
 // Hook action:homepage.get:news

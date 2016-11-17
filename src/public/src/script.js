@@ -25,9 +25,9 @@ $(() => {
                 socket.emit('plugins.FeaturedTopicsExtended.featureTopic', {
                   tid,
                   theirid,
-                  list: $('#fte-topic-list-select').val()
+                  slug: $('#fte-topic-list-select').val()
                 }, err => {
-                  if (err) return app.alertError(err)
+                  if (err) return app.alertError(err.message)
 
                   app.alertSuccess('Featured Topic')
                 })
@@ -50,7 +50,7 @@ $(() => {
     }
 
     function registerEventHandlers () {
-      $('[component="topic"]').on('click', '.thread-tools .mark-featured', () => {openTopicsListModal()})
+      $('.topic').on('click', '.thread-tools .mark-featured', () => {openTopicsListModal()})
       $('[component="topic"]').on('click', '[component="mark-featured"]', () => {openTopicsListModal(app.user.uid)})
     }
 

@@ -2,6 +2,7 @@
   function init (panel) {
     let group = panel.find('.fte-list-group')
 
+    if (!group.length) return
     if (group.find('option').length) return
 
     app.parseAndTranslate('partials/fte-list-select', {lists: ajaxify.data.lists}, html => {
