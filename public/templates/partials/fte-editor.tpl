@@ -8,14 +8,7 @@
 
   <div class="row">
     <div class="col-sm-12 col-md-12">
-      <div class="form-group">
-        <label for="fte-editor-list-select">Featured Topics Lists</label>
-        <select id="fte-editor-list-select" class="form-control">
-          <!-- BEGIN lists -->
-          <option value="{lists.slug}" <!-- IF @first -->selected="selected"<!-- ENDIF @first -->>{lists.userTitle}</option>
-          <!-- END lists -->
-        </select>
-      </div>
+      <!-- IMPORT partials/fte-list-select.tpl -->
 
       <div class="form-group">
         <label for="fte-editor-list-autofeature">Automatically feature new topics in these categories.</label>

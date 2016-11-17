@@ -86,14 +86,14 @@ $(() => {
             app.alertError(err.message)
           } else {
             app.alertSuccess(`Created list <b>${list}</b>!`)
-            $('#fte-editor-list-select').append(`<option value="${list}">${list}</option>`)
+            $('.fte-editor-list-select').append(`<option value="${list}">${list}</option>`)
           }
         })
       })
     })
 
     $('#fte-editor-list-delete').click(() => {
-      const slug = $('#fte-editor-list-select').val()
+      const slug = $('.fte-editor-list-select').val()
       const list = $(`option[value="${slug}"]`).text()
 
       bootbox.confirm(`Are you sure you want to delete the list <b>${list}</b>?`, confirm => {
@@ -104,14 +104,14 @@ $(() => {
 
           app.alertSuccess(`Deleted list <b>${list}</b>!`)
 
-          $(`#fte-editor-list-select [value="${slug}"]`).remove()
-          $(`#fte-editor-list-select`).val($(`#fte-editor-list-select option`).first().val())
-          $(`#fte-editor-list-select`).change()
+          $(`.fte-editor-list-select [value="${slug}"]`).remove()
+          $(`.fte-editor-list-select`).val($(`.fte-editor-list-select option`).first().val())
+          $(`.fte-editor-list-select`).change()
         })
       })
     })
 
-    $('#fte-editor-list-select').change(function () {
+    $('.fte-editor-list-select').change(function () {
       const slug = $(this).val()
 
       socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug}, (err, data) => {
@@ -127,7 +127,7 @@ $(() => {
 
     $('#fte-editor-list-autofeature-save').click(function () {
       const autoFeature = $('#fte-editor-list-autofeature').val()
-      const slug = $('#fte-editor-list-select').val()
+      const slug = $('.fte-editor-list-select').val()
 
       socket.emit('plugins.FeaturedTopicsExtended.setAutoFeature', {theirid, slug, autoFeature}, (err, data) => {
         if (err) return app.alertError(err.message)
@@ -136,7 +136,7 @@ $(() => {
       })
     })
 
-    $('#fte-editor-list-select').val($('#fte-editor-list-select [selected]').val())
+    $('.fte-editor-list-select').val($('.fte-editor-list-select [selected]').val())
     $('#fte-editor-list-autofeature').val(ajaxify.data.list.autoFeature.join(','))
   }
 

@@ -19,7 +19,8 @@
     { "hook": "filter:post.tools", "method": "addPostTools" },
     { "hook": "action:topic.post", "method": "topicPost" },
     { "hook": "action:topic.delete", "method": "topicDelete" },
-    { "hook": "filter:user.profileMenu", "method": "userProfileMenu" }
+    { "hook": "filter:user.profileMenu", "method": "userProfileMenu" },
+    { "hook": "filter:admin/extend/widgets.build", "method": "buildWidgets" }
   ],
   "staticDirs": {
     "public": "public"
@@ -32,6 +33,6 @@
     "./public/src/script.js"
   ],
   "acpScripts": [
-    "./public/src/script.js"
+    "./public/src/acp.js"
   ]
 }

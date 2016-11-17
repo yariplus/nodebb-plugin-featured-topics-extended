@@ -1,14 +1,10 @@
 <form id="fte-admin-page">
-  <!-- BEGIN lists -->
-  <div class="panel panel-primary">
-    <div class="panel-heading"><span class="panel-title">{lists.name}</span></div>
-  </div>
-  <!-- END lists -->
+  <a href="{config.relative_path}/featured" class="btn btn-default" target="_blank">Edit Featured Topic Lists</a>
 
-  <button id="addList" type="button" class="btn btn-success">Create a new Featured Topic List</button>
+  <br><br>
 
   <div class="panel panel-primary">
-    <div class="panel-heading"><span class="panel-title">News Page</span></div>
+    <div class="panel-heading"><span class="panel-title">News Page Settings</span></div>
     <div class="panel-body">
       <div class="checkbox">
         <label for="newsHideAnon" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
@@ -37,7 +33,7 @@
     </div>
   </div>
 
-  <div id="save" class="btn btn-success">Save Settings</div>
+  <button type="button" id="save" class="floating-button mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><i class="material-icons">save</i></button>
 </form>
 
 <script>

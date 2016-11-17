@@ -1,5 +1,4 @@
-<h2>Re-order Featured Topics</h2>
-<ul id="sort-featured" class="list-unstyled">
+<ul class="fte-sort-featured" style="list-style: none;">
 	<!-- BEGIN topics -->
 	<li>
 		<div class="panel panel-default pointer">

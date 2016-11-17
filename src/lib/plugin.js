@@ -567,25 +567,25 @@ export function getWidgets (widgets, callback) {
       widget: 'featuredTopicsExSidebar',
       name: 'Featured Topics Sidebar',
       description: 'Featured topics as a sidebar widget.',
-      content: '<small>Use the Topic Tools on a topic page to feature that topic.</small>'
+      content: 'admin/widgets/fte-widget.tpl'
     },
     {
       widget: 'featuredTopicsExBlocks',
       name: 'Featured Topics Blocks',
       description: 'Featured topics as Lavender-style blocks.',
-      content: '<small>Use the Topic Tools on a topic page to feature that topic.</small>'
+      content: 'admin/widgets/fte-widget.tpl'
     },
     {
       widget: 'featuredTopicsExCards',
       name: 'Featured Topics Cards',
       description: 'Featured topics as Persona-style topic cards.',
-      content: 'admin/widgets/featured-topics-ex-cards.tpl'
+      content: 'admin/widgets/fte-widget.tpl'
     },
     {
       widget: 'featuredTopicsExList',
       name: 'Featured Topics List',
       description: 'Featured topics as a normal topic list.',
-      content: '<small>Use the Topic Tools on a topic page to feature that topic.</small>'
+      content: 'admin/widgets/fte-widget.tpl'
     }
   ]
 
@@ -815,6 +815,13 @@ function getDate (timestamp) {
   }
   date.start = (Date.now() - parseInt(timestamp, 10))/1000 < 604800 ? `${date.day} at ${date.hour}:${date.min} ${date.mer}` : date.full
   return date
+}
+
+export function buildWidgets (data, next) {
+  getFeaturedTopicsLists(data.req.uid, 0, (err, lists) => {
+    data.templateData.lists = lists
+    next(err, data)
+  })
 }
 
 // Render the news.
