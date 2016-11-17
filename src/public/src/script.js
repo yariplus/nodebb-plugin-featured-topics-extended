@@ -114,10 +114,12 @@ $(() => {
     $('#fte-editor-list-select').change(function () {
       const slug = $(this).val()
 
-      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug}, (err, topics) => {
-        app.parseAndTranslate('partials/fte-topic-list', {topics, isSelf: ajaxify.data.isSelf}, html => {
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug}, (err, data) => {
+        app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
           $('.fte-topic-list').html(html)
         })
+
+        $('#fte-editor-list-autofeature').val(data.list.autoFeature)
       })
     })
 

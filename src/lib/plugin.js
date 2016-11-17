@@ -111,6 +111,7 @@ export function init (params, next) {
       }
 
       data.lists = lists
+      data.list = lists[0]
 
       getFeaturedTopics(req.uid, theirid, lists[0].name, page, size, (err, topics) => {
         data.topics = topics
@@ -140,7 +141,15 @@ export function init (params, next) {
     let {theirid, slug} = data
     theirid = parseInt(theirid, 10) || 0
 
-    getFeaturedTopicsBySlug(uid, theirid, slug, 1, 5, next)
+    getFeaturedTopicsBySlug(uid, theirid, slug, 1, 5, (err, topics) => {
+      if (err) return next(err)
+
+      getFeaturedTopicsListBySlug(uid, theirid, slug, (err, list) => {
+        if (err) return next(err)
+
+        next(null, {list, topics})
+      })
+    })
   }
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopicsLists = (socket, data, next) => {
@@ -164,7 +173,7 @@ export function init (params, next) {
       if (err) return next(err)
 
       if (theirid) { // User Featured List
-        if (!(isSelf || isAdminOrGlobalMod)) return next(new Error(`Cannot change another user's featured topics.`))
+        if (!isSelf) return next(new Error(`Cannot change another user's featured topics.`))
       } else { // Global List
         if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
       }
@@ -182,12 +191,33 @@ export function init (params, next) {
       if (err) return next(err)
 
       if (theirid) { // User Featured List
-        if (!(isSelf || isAdminOrGlobalMod)) return next(new Error(`Cannot change another user's featured topics lists.`))
+        if (!isSelf) return next(new Error(`Cannot change another user's featured topics lists.`))
       } else { // Global List
         if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
       }
 
       createList(theirid, list, next)
+    })
+  }
+
+  SocketPlugins.FeaturedTopicsExtended.setAutoFeature = (socket, data, next) => {
+    let {theirid, list, autoFeature} = data
+    const {uid} = socket
+    let isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
+
+    autoFeature = typeof autoFeature === 'string' ? autoFeature : ''
+    autoFeature = autoFeature.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+
+    User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
+      if (err) return next(err)
+
+      if (theirid) { // User Featured List
+        if (!isSelf) return next(new Error(`Cannot change another user's featured topics lists.`))
+      } else { // Global List
+        if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
+      }
+
+      setAutoFeature(theirid, list, autoFeature, next)
     })
   }
 
@@ -256,8 +286,7 @@ export function getFeaturedTopicsLists (uid, theirid, next) {
     async.apply(db.getSortedSetRangeByScore, `fte:${theirid}:lists`, 0, 10000, 0, '+inf'),
     (lists, next) => {
       lists = lists.map(list => `fte:${theirid}:list:${list}`)
-      console.log('getting lists')
-      console.dir(lists)
+
       next(null, lists)
     },
     async.apply(db.getObjects),
@@ -266,14 +295,41 @@ export function getFeaturedTopicsLists (uid, theirid, next) {
         list.userTitle = validator.escape(list.name)
         return list
       })
-      console.log('got lists')
-      console.dir(lists)
-      next(null, lists)
+
+      async.each(lists, (list, next) => {
+        db.getSortedSetRange(`fte:${theirid}:list:${list.name}:autofeature`, 0, -1, (err, autoFeature) => {
+          list.autoFeature = autoFeature
+          next()
+        })
+      }, () => {
+        next(null, lists)
+      })
     }
   ], next)
 }
 
-export function getFeaturedTopicsList (uid, theirid, listName, next) {
+export function getFeaturedTopicsList (uid, theirid, list, next) {
+  db.getObject(`fte:${theirid}:list:${list}`, (err, list) => {
+    if (err) return next(err)
+
+    list.userTitle = validator.escape(list.name)
+
+    db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, (err, autoFeature) => {
+      if (err) return next(err)
+
+      list.autoFeature = autoFeature
+
+      next(null, list)
+    })
+  })
+}
+
+export function getFeaturedTopicsListBySlug (uid, theirid, slug, next) {
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
+
+    getFeaturedTopicsList(uid, theirid, list, next)
+  })
 }
 
 export function getFeaturedTopics (uid, theirid, list, page, size, next) {
@@ -289,7 +345,7 @@ export function getFeaturedTopicsBySlug (uid, theirid, slug, page, size, next) {
   getListNameBySlug(theirid, slug, (err, list) => {
     if (err) return next(err)
 
-    getFeaturedTopics (uid, theirid, list, page, size, next)
+    getFeaturedTopics(uid, theirid, list, page, size, next)
   })
 }
 
@@ -382,6 +438,40 @@ function getTopicsWithMainPost (uid, tids, cb) {
       })
     }, () => {
       cb(null, topicsData)
+    })
+  })
+}
+
+function getAutoFeature (theirid, slug, next) {
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
+
+    db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, next)
+  })
+}
+
+function setAutoFeature (theirid, slug, autoFeature, next) {
+  getListNameBySlug(theirid, slug, (err, list) => {
+    if (err) return next(err)
+
+    db.getSortedSetRange(`fte:${theirid}:list:${list}:autofeature`, 0, -1, (err, cids) => {
+      if (err) return next(err)
+
+      async.parallel([
+        async.apply(async.each, cids, (cid, next) => {
+          db.sortedSetRemove(`fte:autofeature:${cid}`, list, next)
+        }),
+        async.apply(db.delete, `fte:${theirid}:list:${list}:autofeature`)
+      ], (err) => {
+        if (err) return next(err)
+
+        async.parallel([
+          async.apply(async.each, autoFeature, (cid, next) => {
+            db.sortedSetAdd(`fte:autofeature:${cid}`, 0, list, next)
+          }),
+          async.apply(db.sortedSetAdd, `fte:${theirid}:list:${list}:autofeature`, 0, cid)
+        ])
+      })
     })
   })
 }
