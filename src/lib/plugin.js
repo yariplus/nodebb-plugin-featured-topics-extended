@@ -44,14 +44,12 @@ export function init (params, next) {
   router.get('/api/featured', renderEditor)
 
   function renderEditor (req, res) {
-    const page = 1
-    const size = 10
     let data = {}
 
     User.isAdminOrGlobalMod(req.uid, (err, isAdminOrGlobalMod) => {
       data.isSelf = isAdminOrGlobalMod
 
-      prepareEditor (req, res, 0, data, page, size, (err, data) => {
+      prepareEditor(req, res, 0, data, 0, 0, (err, data) => {
         res.render('fte-featured', data)
       })
     })
@@ -75,9 +73,6 @@ export function init (params, next) {
   router.get('/api/user/:userslug/featured', renderUserFeatured)
 
   function renderUserFeatured (req, res) {
-    const page = 1
-    const size = 10
-
     prepareAccountPage(req, 'account/fte-featured', 'Featured Topic Lists', (err, userData) => {
       if (err) {
         winston.error(err)
@@ -86,7 +81,7 @@ export function init (params, next) {
 
       const {theirid} = userData
 
-      prepareEditor (req, res, theirid, userData, page, size, (err, data) => {
+      prepareEditor(req, res, theirid, userData, 0, 0, (err, data) => {
         res.render('account/fte-featured', data)
       })
     })
@@ -137,11 +132,11 @@ export function init (params, next) {
 
   SocketPlugins.FeaturedTopicsExtended.getFeaturedTopics = (socket, data, next) => {
     const {uid} = socket
-    let {theirid, slug} = data
+    let {theirid, slug, page, size} = data
 
     theirid = parseInt(theirid, 10) || 0
 
-    getFeaturedTopicsBySlug(uid, theirid, slug, 1, 5, (err, topics) => {
+    getFeaturedTopicsBySlug(uid, theirid, slug, page, size, (err, topics) => {
       if (err) return next(err)
 
       getFeaturedTopicsListBySlug(uid, theirid, slug, (err, list) => {
@@ -180,6 +175,28 @@ export function init (params, next) {
       }
 
       featureTopic(theirid, tid, slug, next)
+    })
+  }
+
+  SocketPlugins.FeaturedTopicsExtended.unfeatureTopic = (socket, data, next) => {
+    const {tid, slug} = data
+    const {uid} = socket
+    let {theirid} = data
+
+    const isSelf = parseInt(uid, 10) === parseInt(theirid, 10)
+
+    theirid = parseInt(theirid, 10) || 0
+
+    User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
+      if (err) return next(err)
+
+      if (theirid) { // User Featured List
+        if (!isSelf) return next(new Error(`Cannot change another user's featured topics.`))
+      } else { // Global List
+        if (!isAdminOrGlobalMod) return next(err || new Error('[[error:no-privileges]]'))
+      }
+
+      unfeatureTopic(theirid, tid, slug, next)
     })
   }
 
@@ -381,13 +398,30 @@ export function getFeaturedTopicsListBySlug (uid, theirid, slug, next) {
   })
 }
 
-export function getFeaturedTopics (uid, theirid, list, page, size, next) {
+export function getFeaturedTopics (uid, theirid, list, page, size, callback) {
+  page = page || 1
+  size = size || 10
   page--
 
   async.waterfall([
-    async.apply(db.getSortedSetRevRangeByScore, `fte:${theirid}:list:${list}:tids`, page * size, page * size + size, '+inf', 0),
+    async.apply(db.getSortedSetRevRangeByScore, `fte:${theirid}:list:${list}:tids`, page * size, size, '+inf', 0),
+    (tids, next) => {
+      async.each(tids, (tid, next) => {
+        db.isSortedSetMember('topics:tid', tid, (err, exists) => {
+          if (!err && !exists) {
+            unfeatureTopic(theirid, tid, list, () => {
+              getFeaturedTopics(uid, theirid, list, page + 1, size, callback)
+            })
+          } else {
+            next()
+          }
+        })
+      }, () => {
+        next(null, tids)
+      })
+    },
     async.apply(getTopicsWithMainPost, uid)
-  ], next)
+  ], callback)
 }
 
 export function getFeaturedTopicsBySlug (uid, theirid, slug, page, size, next) {
@@ -478,6 +512,7 @@ function getTopicsWithMainPost (uid, tids, cb) {
   Topics.getTopics(tids, uid, (err, topicsData) => {
     if (err) return cb(err)
 
+    let recycle = false
     topicsData = topicsData.filter(topic => !topic.deleted)
 
     async.forEachOf(topicsData, (topicData, i, next) => {

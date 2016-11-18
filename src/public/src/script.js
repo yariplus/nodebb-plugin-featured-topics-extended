@@ -113,12 +113,14 @@ $(() => {
 
     $('.fte-editor-list-select').change(function () {
       const slug = $(this).val()
+      const page = 1
 
-      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug}, (err, data) => {
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
         if (err) return app.alertError(err.message)
 
         app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
           $('.fte-topic-list').html(html)
+          $('.fte-topic-list').data('page', 1)
         })
 
         $('#fte-editor-list-autofeature').val(data.list.autoFeature.join(','))
@@ -136,8 +138,67 @@ $(() => {
       })
     })
 
+    $('#fte-editor').on('click', '.fa-close', function () {
+      const slug = $('.fte-editor-list-select').val()
+      const tid = $(this).data('tid')
+      const row = $(this).closest('tr')
+
+      socket.emit('plugins.FeaturedTopicsExtended.unfeatureTopic', {theirid, slug, tid}, (err, data) => {
+        if (err) return app.alertError(err.message)
+
+        app.alertSuccess('Unfeatured topic')
+
+        const page = $('.fte-topic-list').data('page')
+
+        socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
+          if (err) return app.alertError(err.message)
+          if (!data || !data.topics || !data.topics.length) return
+
+          app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
+            $('.fte-topic-list').html(html)
+          })
+        })
+      })
+    })
+
+    $('#fte-editor').on('click', '.fte-topics-list-prev', function () {
+      let page = $('.fte-topic-list').data('page')
+      if (page === 1) return
+
+      page--
+      const slug = $('.fte-editor-list-select').val()
+
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
+        if (err) return app.alertError(err.message)
+        if (!data || !data.topics || !data.topics.length) return
+
+        app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
+          $('.fte-topic-list').html(html)
+          $('.fte-topic-list').data('page', page)
+        })
+      })
+    })
+
+    $('#fte-editor').on('click', '.fte-topics-list-next', function () {
+      let page = $('.fte-topic-list').data('page')
+
+      page++
+      const slug = $('.fte-editor-list-select').val()
+
+      socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
+        if (err) return app.alertError(err.message)
+        if (!data || !data.topics || !data.topics.length) return
+
+        app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
+          $('.fte-topic-list').html(html)
+          $('.fte-topic-list').data('page', page)
+        })
+      })
+    })
+
     $('.fte-editor-list-select').val($('.fte-editor-list-select [selected]').val())
     $('#fte-editor-list-autofeature').val(ajaxify.data.list.autoFeature.join(','))
+    $('.fte-topic-list').data('page', 1)
   }
 
   define('forum/account/fte-blog', ['forum/account/header'], header => {

@@ -5,6 +5,6 @@
   </td>
   <td class="fte-m16">{topics.category.name}</td>
   <td class="fte-m16">{topics.humanDate.full}</td>
-  <td class="fte-w1" <!-- IF !isSelf -->style="display:none;"<!-- ENDIF !isSelf -->><i class="fa fa-fw fa-close" style="color:red;"></i></td>
+  <td class="fte-w1" <!-- IF !isSelf -->style="display:none;"<!-- ENDIF !isSelf -->><i class="fa fa-fw fa-close" style="color:red;" data-tid="{topics.tid}"></i></td>
 </tr>
 <!-- END topics -->

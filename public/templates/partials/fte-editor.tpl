@@ -36,8 +36,8 @@
         <tfoot>
           <tr>
             <td colspan="4">
-              <button class="btn btn-default" type="button" style="float:left;">&lt;</button>
-              <button class="btn btn-default" type="button" style="float:right;">&gt;</button>
+              <button class="btn btn-default fte-topics-list-prev" type="button" style="float:left;">&lt;</button>
+              <button class="btn btn-default fte-topics-list-next" type="button" style="float:right;">&gt;</button>
             </td>
           </tr>
         </tfoot>
