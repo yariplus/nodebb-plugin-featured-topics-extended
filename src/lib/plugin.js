@@ -25,6 +25,7 @@ const defaultSettings = {
 }
 
 let app, settings
+const GLOBALUID = 0
 
 // Hook static:app.load
 // Setup routes and settings.
@@ -35,10 +36,10 @@ export function init (params, next) {
   const router = params.router
   const middleware = params.middleware
 
-  router.get('/news', middleware.buildHeader, render)
-  router.get('/news/:page', middleware.buildHeader, render)
-  router.get('/api/news', render)
-  router.get('/api/news/:page', render)
+  router.get('/news', middleware.buildHeader, renderNewsPage)
+  router.get('/news/:page', middleware.buildHeader, renderNewsPage)
+  router.get('/api/news', renderNewsPage)
+  router.get('/api/news/:page', renderNewsPage)
 
   router.get('/featured', middleware.buildHeader, renderEditor)
   router.get('/api/featured', renderEditor)
@@ -518,7 +519,8 @@ function getTopicsWithMainPost (uid, tids, cb) {
     async.forEachOf(topicsData, (topicData, i, next) => {
       Topics.getMainPost(topicData.tid, uid, (err, mainPost) => {
         topicsData[i].post = mainPost
-        topicsData[i].humanDate = getDate(topicsData[i].timestamp)
+        topicsData[i].date = getDate(topicsData[i].timestamp)
+        topicsData[i].replies = topicsData[i].postcount - 1
 
         next()
       })
@@ -755,7 +757,7 @@ export function renderFeaturedTopicsNews (widget, callback) {
 // Hook action:homepage.get:news
 // Pass hook data to the render function.
 export function newsRender (data) {
-  render(data.req, data.res, data.next)
+  renderNewsPage(data.req, data.res, data.next)
 }
 
 // Hook filter:navigation.available
@@ -908,45 +910,55 @@ export function buildWidgets (data, next) {
   })
 }
 
-// Render the news.
-function render (req, res, next) {
-  const payload       = {config: {relative_path: nconf.get('relative_path')}}
-  const topicsPerPage = 5
-  const uid = req.uid
+// Render featured topics page using a template.
+function renderFeaturedPage (uid, theirid, slug, page, size, template, next) {
+  db.getObjectField(`fte:${theirid}:lists:slugs`, slug, (err, list) => {
+    db.sortedSetCount(`fte:${theirid}:list:${list}:tids`, '-inf', '+inf', (err, count) => {
+      let pageCount = Math.max(1, Math.ceil(count/size))
+      page = parseInt(page, 10)
+      const nextpage = page === pageCount ? false : page + 1
+      const prevpage = page === 1 ? false : page - 1
 
-  if (!uid && settings.get('newsHideAnon')) return res.render('news', payload)
+      let pages = []
+      while (pageCount > 0) {
+        pages.unshift({number: pageCount, currentPage: pageCount === page})
+        pageCount--
+      }
 
-  async.waterfall([
-    async.apply(getFeaturedTopics, uid, 0, 'News', req.params.page || 1, topicsPerPage),
-    (topicsData, next) => {
-      payload.topics = topicsData
+      getFeaturedTopicsBySlug(uid, theirid, slug, page, size, (err, topics) => {
+        if (err) {
+          winston.error('Error parsing news page:', err ? (err.message || err) : 'null')
+          return next(null, '')
+        }
 
-      payload.topics.forEach(topic => {
-        topic.date = getDate(topic.timestamp)
-        topic.replies = topic.postcount - 1
+        if (template !== 'custom') {
+          app.render(`news-${template}`, {topics, pages, nextpage, prevpage}, (err, html) => {
+            translator.translate(html, newsTemplate => {
+              next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
+            })
+          })
+        } else {
+          const parsed = tjs.parse(settings.get('customTemplate'), {topics, pages, nextpage, prevpage})
+          translator.translate(parsed, newsTemplate => {
+            newsTemplate = newsTemplate.replace('&#123;', '{').replace('&#125;', '}')
+            next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
+          })
+        }
       })
+    })
+  })
+}
 
-      next()
-    }
-  ], err => {
-    if (err) winston.error('Error parsing news page:', err ? (err.message || err) : 'null')
+function renderNewsPage (req, res) {
+  const {uid} = req
+  const template = settings.get('newsTemplate') || defaultSettings['newsTemplate']
+  const page = req.params.page || 1
+  const size = 5
+  const slug = 'news'
 
-    const template = settings.get('newsTemplate') || defaultSettings['newsTemplate']
+  if (!uid && settings.get('newsHideAnon')) return res.render('news', {})
 
-    if (template !== 'custom') {
-      app.render(`news-${template}`, payload, (err, html) => {
-        translator.translate(html, translatedHTML => {
-          payload.newsTemplate = translatedHTML
-          res.render('news', res.locals.isAPI ? payload : {newsTemplate: translatedHTML})
-        })
-      })
-    } else {
-      const parsed = tjs.parse(settings.get('customTemplate'), payload)
-      translator.translate(parsed, translatedHTML => {
-        translatedHTML = translatedHTML.replace('&#123;', '{').replace('&#125;', '}')
-        payload.newsTemplate = translatedHTML
-        res.render('news', res.locals.isAPI ? payload : {newsTemplate: translatedHTML})
-      })
-    }
+  renderFeaturedPage(uid, GLOBALUID, slug, page, size, template, (err, data) => {
+    res.render('news', data)
   })
 }
