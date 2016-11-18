@@ -38,7 +38,7 @@
             }
           }).on("shown.bs.modal", function () {
             $('span.timeago').timeago()
-            $('#sort-featured').sortable().disableSelection()
+            $('.fte-sort-featured').sortable().disableSelection()
 
             $('.delete-featured').on('click', function () {
               $(this).parents('.panel').remove()
