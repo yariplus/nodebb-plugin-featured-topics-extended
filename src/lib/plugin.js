@@ -24,13 +24,13 @@ const defaultSettings = {
   customTemplate: ''
 }
 
-let app, settings, autoFeature
+let app, settings
 
 // Hook static:app.load
 // Setup routes and settings.
 export function init (params, next) {
   app = params.app
-  settings = new Settings('featured-topics-extended', '1.0.0', defaultSettings, readSettings)
+  settings = new Settings('featured-topics-extended', '1.0.0', defaultSettings)
 
   const router = params.router
   const middleware = params.middleware
@@ -130,7 +130,7 @@ export function init (params, next) {
   }
 
   SocketAdmin.settings.syncFeaturedTopicsExtended = () => {
-    settings.sync(readSettings)
+    settings.sync()
   }
 
   SocketPlugins.FeaturedTopicsExtended = {}
@@ -232,7 +232,7 @@ export function init (params, next) {
 
     theirid = parseInt(theirid, 10) || 0
     autoFeature = typeof autoFeature === 'string' ? autoFeature : ''
-    autoFeature = autoFeature.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    autoFeature = autoFeature.replace(/ /g, '').split(',').map(cid => parseInt(cid, 10)).filter(cid => cid)
 
     User.isAdminOrGlobalMod(uid, (err, isAdminOrGlobalMod) => {
       if (err) return next(err)
@@ -245,10 +245,6 @@ export function init (params, next) {
 
       setAutoFeature(theirid, slug, autoFeature, next)
     })
-  }
-
-  function readSettings() {
-    autoFeature = settings.get('autoFeature').split(',').map(cid => parseInt(cid, 10) || 0)
   }
 
   // Import News Page list. Depreciated. Remove in v1.0.0
@@ -267,6 +263,10 @@ export function init (params, next) {
           featureTopic(0, tid, 'News', next)
         }, err => {
           if (err) return next()
+
+          if (settings.get('autoFeature')) {
+            setAutoFeature(0, 'news', settings.get('autoFeature').replace(/ /g, '').split(',').map(cid => parseInt(cid, 10)).filter(cid => cid), () => {})
+          }
 
           db.delete('featuredex:tids')
           next()
