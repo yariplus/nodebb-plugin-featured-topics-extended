@@ -636,6 +636,12 @@ export function getWidgets (widgets, callback) {
       name: 'Featured Topics List',
       description: 'Featured topics as a normal topic list.',
       content: 'admin/widgets/fte-widget.tpl'
+    },
+    {
+      widget: 'featuredTopicsExNews',
+      name: 'Featured Topics News',
+      description: 'Featured topics as a News/Blog page.',
+      content: 'admin/widgets/fte-widget-news.tpl'
     }
   ]
 
@@ -750,8 +756,22 @@ export function renderFeaturedTopicsList (widget, next) {
 }
 
 // Hook filter:widget.render:featuredTopicsExNews
-export function renderFeaturedTopicsNews (widget, callback) {
-  // TODO
+export function renderFeaturedTopicsNews (widget, next) {
+  const {slug, sorted, max, sortby, template} = widget.data
+  const {uid} = widget
+
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, render)
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+  }
+
+  function render (err, topics) {
+    renderFeaturedPageTopics(template, topics, 1, false, false, false, (err, data) => {
+      next(null, data.newsTemplate)
+    })
+  }
 }
 
 // Hook action:homepage.get:news
@@ -931,22 +951,26 @@ function renderFeaturedPage (uid, theirid, slug, page, size, template, next) {
           return next(null, '')
         }
 
-        if (template !== 'custom') {
-          app.render(`news-${template}`, {topics, pages, nextpage, prevpage}, (err, html) => {
-            translator.translate(html, newsTemplate => {
-              next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
-            })
-          })
-        } else {
-          const parsed = tjs.parse(settings.get('customTemplate'), {topics, pages, nextpage, prevpage})
-          translator.translate(parsed, newsTemplate => {
-            newsTemplate = newsTemplate.replace('&#123;', '{').replace('&#125;', '}')
-            next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
-          })
-        }
+        renderFeaturedPageTopics(template, topics, page, pages, nextpage, prevpage, next)
       })
     })
   })
+}
+
+function renderFeaturedPageTopics (template, topics, page, pages, nextpage, prevpage, next) {
+  if (template !== 'custom') {
+    app.render(`news-${template}`, {topics, pages, nextpage, prevpage}, (err, html) => {
+      translator.translate(html, newsTemplate => {
+        next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
+      })
+    })
+  } else {
+    const parsed = tjs.parse(settings.get('customTemplate'), {topics, pages, nextpage, prevpage})
+    translator.translate(parsed, newsTemplate => {
+      newsTemplate = newsTemplate.replace('&#123;', '{').replace('&#125;', '}')
+      next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
+    })
+  }
 }
 
 function renderNewsPage (req, res) {

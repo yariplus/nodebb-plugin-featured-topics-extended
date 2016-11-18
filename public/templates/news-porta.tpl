@@ -65,10 +65,10 @@
 
   <!-- END topics -->
 
+  <!-- IF pages.length -->
   <div class="section sectionMain">
     <div class="PageNav">
       <nav>
-
         <!-- IF prevpage -->
         <a href="/news/{prevpage}" class="btn btn-default">&lt; Previous Page</a>
         <!-- ENDIF prevpage -->
@@ -80,8 +80,8 @@
         <!-- IF nextpage -->
         <a href="/news/{nextpage}" class="btn btn-default">Next Page &gt;</a>
         <!-- ENDIF nextpage -->
-
       </nav>
     </div>
   </div>
+  <!-- ENDIF pages.length -->
 </div>
