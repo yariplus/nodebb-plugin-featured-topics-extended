@@ -80,6 +80,9 @@ export function init (params, next) {
       const {theirid} = userData
 
       prepareEditor(req, res, theirid, userData, 0, 0, (err, data) => {
+        data.title = `${userData.username} [[fte:featuredtopics]]`
+        data.breadcrumbs = helpers.buildBreadcrumbs([{text: userData.username, url: `/user/${userData.userslug}`}, {text: `[[fte:featuredtopics]]`}])
+
         res.render('account/fte-featured', data)
       })
     })
@@ -88,9 +91,6 @@ export function init (params, next) {
   function prepareAccountPage (req, tpl, name, next) {
     accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, (err, userData) => {
       if (err) return next(err)
-
-      userData.title = '[[pages:' + tpl + ', ' + userData.username + ']]'
-      userData.breadcrumbs = helpers.buildBreadcrumbs([{text: userData.username, url: '/user/' + userData.userslug}, {text: '[[user:' + name + ']]'}])
 
       next(null, userData)
     })
@@ -881,14 +881,14 @@ export function topicDelete (topicData) {
 export function userProfileMenu (data, next) {
   data.links = data.links.concat([
     {
-      name: 'Featured Topic Lists',
+      name: '[[fte:featuredtopics]]',
       id: 'fte-profilelink-featured',
       public: false,
       route: 'featured',
       icon: 'fa-newspaper-o'
     },
     {
-      name: 'Blog',
+      name: '[[fte:blog]]',
       id: 'fte-profilelink-blog',
       public: true,
       route: 'blog',
@@ -997,6 +997,9 @@ function renderBlogPage (req, res) {
   const slug = req.params.listslug || 'blog'
 
   accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, (err, userData) => {
+    userData.title = `${userData.username} [[fte:blog]]`
+    userData.breadcrumbs = helpers.buildBreadcrumbs([{text: userData.username, url: `/user/${userData.userslug}`}, {text: `[[fte:blog]]`}])
+
     parseFeaturedPage(uid, userData.uid, slug, page, size, template, {
       config: {
         relative_path: nconf.get('relative_path')

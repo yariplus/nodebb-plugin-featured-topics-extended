@@ -10,6 +10,7 @@
     <div class="col-sm-12 col-md-12">
       <!-- IMPORT partials/fte-list-select.tpl -->
 
+      <!-- IF isSelf -->
       <div class="form-group">
         <label for="fte-editor-list-autofeature">Automatically feature new topics in these categories.</label>
         <div class="input-group">
@@ -19,6 +20,7 @@
           </span>
         </div>
       </div>
+      <!-- ENDIF isSelf -->
 
       <label>List Topics</label>
       <table class="table table-bordered table-striped">
