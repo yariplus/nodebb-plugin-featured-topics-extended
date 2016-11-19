@@ -40,6 +40,8 @@ export function init (params, next) {
   router.get('/news/:page', middleware.buildHeader, renderNewsPage)
   router.get('/api/news', renderNewsPage)
   router.get('/api/news/:page', renderNewsPage)
+  router.get('/api/news', renderNewsPage)
+  router.get('/api/news/:page', renderNewsPage)
 
   router.get('/featured', middleware.buildHeader, renderEditor)
   router.get('/api/featured', renderEditor)
@@ -56,19 +58,14 @@ export function init (params, next) {
     })
   }
 
-  router.get('/user/:userslug/blog', middleware.buildHeader, renderUserBlog)
-  router.get('/api/user/:userslug/blog', renderUserBlog)
-
-  function renderUserBlog (req, res) {
-    prepareAccountPage(req, 'account/fte-blog', 'Blog', (err, userData) => {
-      if (err) {
-        winston.error(err)
-        return res.redirect(`/user/${req.params.userslug}/`)
-      }
-
-      res.render('account/fte-blog', userData)
-    })
-  }
+  router.get('/user/:userslug/blog', middleware.buildHeader, renderBlogPage)
+  router.get('/api/user/:userslug/blog', renderBlogPage)
+  router.get('/user/:userslug/blog/:page', middleware.buildHeader, renderBlogPage)
+  router.get('/api/user/:userslug/blog/:page', renderBlogPage)
+  router.get('/user/:userslug/featured/:listslug', middleware.buildHeader, renderBlogPage)
+  router.get('/api/user/:userslug/featured/:listslug', renderBlogPage)
+  router.get('/user/:userslug/featured/:listslug/:page', middleware.buildHeader, renderBlogPage)
+  router.get('/api/user/:userslug/featured/:listslug/:page', renderBlogPage)
 
   router.get('/user/:userslug/featured', middleware.buildHeader, renderUserFeatured)
   router.get('/api/user/:userslug/featured', renderUserFeatured)
@@ -629,7 +626,7 @@ export function getWidgets (widgets, callback) {
       widget: 'featuredTopicsExCards',
       name: 'Featured Topics Cards',
       description: 'Featured topics as Persona-style topic cards.',
-      content: 'admin/widgets/fte-widget.tpl'
+      content: 'admin/widgets/fte-widget-cards.tpl'
     },
     {
       widget: 'featuredTopicsExList',
@@ -768,8 +765,8 @@ export function renderFeaturedTopicsNews (widget, next) {
   }
 
   function render (err, topics) {
-    renderFeaturedPageTopics(template, topics, 1, false, false, false, (err, data) => {
-      next(null, data.newsTemplate)
+    parseFeaturedPageTopics(template, topics, 1, false, false, false, {}, (err, data) => {
+      next(null, data.featuredTemplate)
     })
   }
 }
@@ -930,8 +927,8 @@ export function buildWidgets (data, next) {
   })
 }
 
-// Render featured topics page using a template.
-function renderFeaturedPage (uid, theirid, slug, page, size, template, next) {
+// Parse featured topics page using a template.
+function parseFeaturedPage (uid, theirid, slug, page, size, template, data, next) {
   db.getObjectField(`fte:${theirid}:lists:slugs`, slug, (err, list) => {
     db.sortedSetCount(`fte:${theirid}:list:${list}:tids`, '-inf', '+inf', (err, count) => {
       let pageCount = Math.max(1, Math.ceil(count/size))
@@ -951,24 +948,24 @@ function renderFeaturedPage (uid, theirid, slug, page, size, template, next) {
           return next(null, '')
         }
 
-        renderFeaturedPageTopics(template, topics, page, pages, nextpage, prevpage, next)
+        parseFeaturedPageTopics(template, topics, page, pages, nextpage, prevpage, data, next)
       })
     })
   })
 }
 
-function renderFeaturedPageTopics (template, topics, page, pages, nextpage, prevpage, next) {
+function parseFeaturedPageTopics (template, topics, page, pages, nextpage, prevpage, data, next) {
   if (template !== 'custom') {
-    app.render(`news-${template}`, {topics, pages, nextpage, prevpage}, (err, html) => {
-      translator.translate(html, newsTemplate => {
-        next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
+    app.render(`news-${template}`, {...data, topics, pages, nextpage, prevpage}, (err, html) => {
+      translator.translate(html, featuredTemplate => {
+        next(null, {featuredTemplate, topics, page, pages, nextpage, prevpage})
       })
     })
   } else {
-    const parsed = tjs.parse(settings.get('customTemplate'), {topics, pages, nextpage, prevpage})
-    translator.translate(parsed, newsTemplate => {
-      newsTemplate = newsTemplate.replace('&#123;', '{').replace('&#125;', '}')
-      next(null, {newsTemplate, topics, page, pages, nextpage, prevpage})
+    const parsed = tjs.parse(settings.get('customTemplate'), {...data, topics, pages, nextpage, prevpage})
+    translator.translate(parsed, featuredTemplate => {
+      featuredTemplate = featuredTemplate.replace('&#123;', '{').replace('&#125;', '}')
+      next(null, {featuredTemplate, topics, page, pages, nextpage, prevpage})
     })
   }
 }
@@ -982,7 +979,31 @@ function renderNewsPage (req, res) {
 
   if (!uid && settings.get('newsHideAnon')) return res.render('news', {})
 
-  renderFeaturedPage(uid, GLOBALUID, slug, page, size, template, (err, data) => {
-    res.render('news', data)
+  parseFeaturedPage(uid, GLOBALUID, slug, page, size, template, {
+      config: {
+        relative_path: nconf.get('relative_path')
+      },
+      featuredRoute: `/news/`
+    }, (err, data) => {
+    res.render('news', {...data})
+  })
+}
+
+function renderBlogPage (req, res) {
+  const {uid} = req
+  const template = settings.get('newsTemplate') || defaultSettings['newsTemplate']
+  const page = req.params.page || 1
+  const size = 5
+  const slug = req.params.listslug || 'blog'
+
+  accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, (err, userData) => {
+    parseFeaturedPage(uid, userData.uid, slug, page, size, template, {
+      config: {
+        relative_path: nconf.get('relative_path')
+      },
+      featuredRoute: `/user/${userData.userslug}/${slug}/`
+    }, (err, data) => {
+      res.render('account/fte-blog', {...data, ...userData})
+    })
   })
 }

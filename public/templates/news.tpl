@@ -5,7 +5,7 @@
       <div widget-area="leftsidebar" class="col-lg-3 col-sm-12"></div>
       <div class="col-lg-12 col-sm-12" has-widget-class="col-lg-9 col-sm-12" has-widget-target="leftsidebar">
         <div widget-area="contenttop"></div>
-        {newsTemplate}
+        <div class="fte-news">{featuredTemplate}</div>
         <div widget-area="contentbottom"></div>
       </div>
     </div>

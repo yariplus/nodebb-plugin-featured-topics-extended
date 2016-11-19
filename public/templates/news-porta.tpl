@@ -6,9 +6,9 @@
 
         <div class="subHeading">
           <div style="float: right; white-space: nowrap;">
-            <a href="/topic/{topics.slug}">{topics.date.start}</a>
+            <a href="{config.relative_path}/topic/{topics.slug}">{topics.date.start}</a>
           </div>
-          <a href="/topic/{topics.slug}" class="newsTitle">{topics.title}</a>
+          <a href="{config.relative_path}/topic/{topics.slug}" class="newsTitle">{topics.title}</a>
         </div>
 
         <div class="newsDate">
@@ -42,7 +42,7 @@
             <span class="views">({topics.viewcount} Views / {topics.post.votes} Upvotes)</span>
             <span class="comments">
               <div class="new"></div>
-              <a href="/topic/{topics.slug}">{topics.replies} Replies <i class="fa fa-comment"></i></a>
+              <a href="{config.relative_path}/topic/{topics.slug}">{topics.replies} Replies <i class="fa fa-comment"></i></a>
             </span>
           </div>
           <div class="content newsText">{topics.post.content}</div>
@@ -50,7 +50,7 @@
         </div>
 
         <div class="sectionFooter">
-          <a class="btn btn-default" href="/topic/{topics.slug}">
+          <a class="btn btn-default" href="{config.relative_path}/topic/{topics.slug}">
             <i class="fa fa-reply fa-rotate-180"></i> Continue reading...
           </a>
         </div>
@@ -70,15 +70,15 @@
     <div class="PageNav">
       <nav>
         <!-- IF prevpage -->
-        <a href="/news/{prevpage}" class="btn btn-default">&lt; Previous Page</a>
+        <a href="{config.relative_path}{featuredRoute}{prevpage}" class="btn btn-default">&lt; Previous Page</a>
         <!-- ENDIF prevpage -->
 
         <!-- BEGIN pages -->
-        <a href="/news/{pages.number}" class="btn <!-- IF pages.currentPage -->btn-primary<!-- ELSE -->btn-default<!-- ENDIF pages.currentPage -->">{pages.number}</a>
+        <a href="{config.relative_path}{featuredRoute}{pages.number}" class="btn <!-- IF pages.currentPage -->btn-primary<!-- ELSE -->btn-default<!-- ENDIF pages.currentPage -->">{pages.number}</a>
         <!-- END pages -->
 
         <!-- IF nextpage -->
-        <a href="/news/{nextpage}" class="btn btn-default">Next Page &gt;</a>
+        <a href="{config.relative_path}{featuredRoute}{nextpage}" class="btn btn-default">Next Page &gt;</a>
         <!-- ENDIF nextpage -->
       </nav>
     </div>
