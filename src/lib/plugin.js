@@ -397,8 +397,10 @@ export function getFeaturedTopicsListBySlug (uid, theirid, slug, next) {
 }
 
 export function getFeaturedTopics (uid, theirid, list, page, size, callback) {
-  page = page || 1
-  size = size || 10
+  page = parseInt(page)
+  page = page > 0 ? page : 1
+  size = parseInt(size)
+  size = size > 0 ? size : 10
   page--
 
   async.waterfall([
@@ -665,7 +667,7 @@ export function renderFeaturedTopicsSidebar (widget, next) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
   }
 
   function render (err, topics) {
@@ -682,7 +684,7 @@ export function renderFeaturedTopicsBlocks (widget, next) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
   }
 
   function render (err, topics) {
@@ -699,7 +701,7 @@ export function renderFeaturedTopicsCards (widget, next) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
   }
 
   function render (err, topics) {
@@ -731,7 +733,7 @@ export function renderFeaturedTopicsList (widget, next) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
   }
 
   function render (err, topics) {
@@ -761,7 +763,7 @@ export function renderFeaturedTopicsNews (widget, next) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max || 5, render)
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
   }
 
   function render (err, topics) {
