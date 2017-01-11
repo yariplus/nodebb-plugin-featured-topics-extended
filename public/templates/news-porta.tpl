@@ -37,8 +37,6 @@
               <a href="<!-- IF topics.user.userslug -->{config.relative_path}/user/{topics.user.userslug}<!-- ELSE -->#<!-- ENDIF topics.user.userslug -->" itemprop="author" data-username="{topics.user.username}" data-uid="{topics.user.uid}">{topics.user.username}</a>
             </strong>
 
-            <a class="permalink" href="{config.relative_path}/topic/{topics.slug}/{function.getBookmarkFromIndex}"><span class="timeago" title="{posts.timestampISO}"></span></a>
-
             <span class="views">({topics.viewcount} Views / {topics.post.votes} Upvotes)</span>
             <span class="comments">
               <div class="new"></div>
