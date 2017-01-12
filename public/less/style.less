@@ -495,3 +495,76 @@
 .fte-m16 { width: 16rem; max-width: 16rem; white-space:nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .fte-w1 { width: 1rem; }
+
+.featuredTopicsExCards {
+  list-style-type: none;
+  padding: 0;
+
+  .recent-card {
+    .pointer;
+    height: 110px;
+    width: 100%;
+    padding: 10px;
+    position: relative;
+
+    margin-bottom: 10px;
+
+    .bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-position: 50% 50%;
+      background-size: cover;
+
+      &:hover {
+        filter: brightness(115%);
+        -webkit-filter: brightness(115%);
+      }
+    }
+
+    .topic-info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      pointer-events: none;
+      padding-right: 15px;
+
+      width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+
+      .description {
+        width: 100%;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+
+        font-size: 11px;
+      }
+    }
+
+    .post-count {
+      position: absolute;
+      bottom: 5px;
+      right: 10px;
+      pointer-events: none;
+    }
+
+    .icon {
+      position: absolute;
+      bottom: 5px;
+      left: 10px;
+      pointer-events: none;
+
+      width: 80%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+
+      font-size: 20px;
+    }
+  }
+}
