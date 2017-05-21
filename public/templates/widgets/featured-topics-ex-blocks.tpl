@@ -6,7 +6,7 @@
 
       <div class="ftx-block-inner">
         <div class="ftx-block-card">
-          <a href="{relative_path}/topic/{topics.slug}"><div class="ftx-block-card-bg" style="
+          <a href="{config.relative_path}/topic/{topics.slug}"><div class="ftx-block-card-bg" style="
             background-size: {backgroundSize};
             background-position: {backgroundPosition};
             color: {topics.category.color};
