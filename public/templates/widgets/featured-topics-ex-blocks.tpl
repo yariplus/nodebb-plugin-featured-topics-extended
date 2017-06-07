@@ -6,7 +6,7 @@
 
       <div class="ftx-block-inner">
         <div class="ftx-block-card">
-          <a href="{relative_path}/topic/{topics.slug}"><div class="ftx-block-card-bg" style="
+          <a href="{config.relative_path}/topic/{topics.slug}"><div class="ftx-block-card-bg" style="
             background-size: {backgroundSize};
             background-position: {backgroundPosition};
             color: {topics.category.color};
@@ -27,7 +27,7 @@
           </div>
         </div>
         <div class="ftx-block-title" style="padding-top:110px;">
-          <a href="{relative_path}/topic/{topics.slug}" itemprop="url">
+          <a href="{config.relative_path}/topic/{topics.slug}" itemprop="url">
               <h4>{topics.title}</h4>
           </a>
         </div>
