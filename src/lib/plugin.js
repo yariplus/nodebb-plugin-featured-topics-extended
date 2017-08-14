@@ -555,6 +555,9 @@ function setAutoFeature (theirid, slug, autoFeature, next) {
         async.each(autoFeature, (cid, next) => {
           if (!cid) return next()
 
+          winston.info(`Setting autofeature key 'fte:autofeature:${cid}' value '${theirid}:${list}'`)
+          winston.info(`Setting autofeature key 'fte:${theirid}:list:${list}:autofeature' value '${cid}'`)
+
           async.parallel([
             async.apply(db.sortedSetAdd, `fte:autofeature:${cid}`, 0, `${theirid}:${list}`, next),
             async.apply(db.sortedSetAdd, `fte:${theirid}:list:${list}:autofeature`, 0, cid)
@@ -671,7 +674,10 @@ export function renderFeaturedTopicsSidebar (widget, next) {
   }
 
   function render (err, topics) {
-    app.render('widgets/featured-topics-ex-sidebar', {topics}, next)
+    app.render('widgets/featured-topics-ex-sidebar', {topics}, (err, html) => translator.translate(html, html => {
+      widget.html = html
+      next(err, widget)
+    }))
   }
 }
 
@@ -688,7 +694,10 @@ export function renderFeaturedTopicsBlocks (widget, next) {
   }
 
   function render (err, topics) {
-    app.render('widgets/featured-topics-ex-blocks', {topics}, next)
+    app.render('widgets/featured-topics-ex-blocks', {topics}, (err, html) => translator.translate(html, html => {
+      widget.html = html
+      next(err, widget)
+    }))
   }
 }
 
@@ -719,7 +728,10 @@ export function renderFeaturedTopicsCards (widget, next) {
       widget.data.backgroundOpacity = widget.data.backgroundOpacity || '1.0'
       widget.data.textShadow = widget.data.textShadow || 'none'
 
-      app.render('widgets/featured-topics-ex-cards', widget.data, next)
+      app.render('widgets/featured-topics-ex-cards', widget.data, (err, html) => translator.translate(html, html => {
+        widget.html = html
+        next(err, widget)
+      }))
     })
   }
 }
@@ -744,13 +756,10 @@ export function renderFeaturedTopicsList (widget, next) {
         topic.posts = posts
         next(err)
       })
-    }, err => {
-      app.render('widgets/featured-topics-ex-list', {topics}, (err, html) => {
-        translator.translate(html, translatedHTML => {
-          next(err, translatedHTML)
-        })
-      })
-    })
+    }, err => app.render('widgets/featured-topics-ex-list', {topics}, (err, html) => translator.translate(html, html => {
+      widget.html = html
+      next(err, widget)
+    })))
   }
 }
 
@@ -768,7 +777,8 @@ export function renderFeaturedTopicsNews (widget, next) {
 
   function render (err, topics) {
     parseFeaturedPageTopics(template, topics, 1, false, false, false, {}, (err, data) => {
-      next(null, data.featuredTemplate)
+      widget.html = data.featuredTemplate
+      next(null, widget)
     })
   }
 }
@@ -838,8 +848,8 @@ export function addPostTools (data, callback) {
 
 // Hook action:topic.post
 // Auto-feature topics in the selected categories.
-export function topicPost (topicData) {
-  const {tid, cid} = topicData
+export function topicPost (hookData) {
+  const {tid, cid} = hookData.topic
 
   db.getSortedSetRange(`fte:autofeature:${cid}`, 0, -1, (err, data) => {
     if (err) return winston.warn(err.message)
@@ -859,8 +869,8 @@ export function topicPost (topicData) {
 
 // Hook action:topic.delete
 // Auto-feature topics in the selected categories.
-export function topicDelete (topicData) {
-  const {tid} = topicData
+export function topicDelete (hookData) {
+  const {tid} = hookData.topic
 
   db.getSortedSetRange(`tid:${tid}:featured`, 0, -1, (err, data) => {
     if (err) return winston.warn(err.message)
@@ -879,20 +889,25 @@ export function topicDelete (topicData) {
 }
 
 // Hook filter:user.profileMenu
-// Add links to list management and blog.
+// Add links to private list management and public blog.
 export function userProfileMenu (data, next) {
   data.links = data.links.concat([
     {
       name: '[[fte:featuredtopics]]',
       id: 'fte-profilelink-featured',
-      public: false,
+      visibility: {
+        self: true,
+        other: false,
+        moderator: false,
+        globalMod: false,
+        admin: false,
+      },
       route: 'featured',
       icon: 'fa-newspaper-o'
     },
     {
       name: '[[fte:blog]]',
       id: 'fte-profilelink-blog',
-      public: true,
       route: 'blog',
       icon: 'fa-newspaper-o'
     }
