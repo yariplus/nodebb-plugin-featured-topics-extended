@@ -965,6 +965,8 @@ function parseFeaturedPage (uid, theirid, slug, page, size, template, data, next
           return next(null, '')
         }
 
+        data.paginator = pages.length > 1
+
         parseFeaturedPageTopics(template, topics, page, pages, nextpage, prevpage, data, next)
       })
     })

@@ -63,7 +63,7 @@
 
   <!-- END topics -->
 
-  <!-- IF pages.length -->
+  <!-- IF paginator -->
   <div class="section sectionMain">
     <div class="PageNav">
       <nav>
@@ -81,5 +81,5 @@
       </nav>
     </div>
   </div>
-  <!-- ENDIF pages.length -->
+  <!-- ENDIF paginator -->
 </div>
