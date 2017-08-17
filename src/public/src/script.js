@@ -209,16 +209,3 @@ $(() => {
     }
   })
 })
-
-$(window).on('action:widgets.loaded', (ev, data) => {
-  let widgetsSelector = ''
-
-  widgetsSelector += '[data-widget="featuredTopicsExSidebar"]' + ', '
-  widgetsSelector += '[data-widget="featuredTopicsExBlocks"]' + ', '
-  widgetsSelector += '[data-widget="featuredTopicsExCards"]' + ', '
-  widgetsSelector += '[data-widget="featuredTopicsExList"]'
-
-  const $widgets = $(widgetsSelector)
-  $widgets.find('span.timeago').timeago()
-  $widgets.find('.avatar').tooltip()
-})

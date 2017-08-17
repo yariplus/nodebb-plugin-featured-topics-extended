@@ -5,7 +5,7 @@
 
       <!-- IF topics.thumb -->
         <a href="{config.relative_path}/topic/{topics.slug}">
-          <img title="{topics.title}" class="avatar avatar-sm not-responsive" src="{topics.thumb}">
+          <img title="{topics.title}" class="avatar avatar-sm not-responsive user-img" src="{topics.thumb}">
         </a>
       <!-- ELSE -->
         <a href="<!-- IF topics.user.userslug -->{config.relative_path}/user/{topics.user.userslug}<!-- ELSE -->#<!-- ENDIF topics.user.userslug -->">
