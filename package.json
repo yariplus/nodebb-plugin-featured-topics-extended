@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-featured-topics-extended",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Adds a customisable news/blog page and some widgets using featured topics.",
   "license": "(CC0-1.0 OR MIT)",
   "main": "./lib/plugin.js",
