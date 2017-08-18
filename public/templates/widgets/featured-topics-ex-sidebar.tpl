@@ -10,9 +10,9 @@
       <!-- ELSE -->
         <a href="<!-- IF topics.user.userslug -->{config.relative_path}/user/{topics.user.userslug}<!-- ELSE -->#<!-- ENDIF topics.user.userslug -->">
           <!-- IF topics.user.picture -->
-          <img title="{topics.user.username}" class="avatar avatar-sm not-responsive" src="{topics.user.picture}" />
+          <img title="{topics.user.username}" class="avatar avatar-sm not-responsive user-img" src="{topics.user.picture}" />
           <!-- ELSE -->
-          <div title="{topics.user.username}" class="avatar avatar-sm not-responsive" style="background-color: {topics.user.icon:bgColor};">{topics.user.icon:text}</div>
+          <div title="{topics.user.username}" class="avatar avatar-sm not-responsive user-img" style="background-color: {topics.user.icon:bgColor};">{topics.user.icon:text}</div>
           <!-- ENDIF topics.user.picture -->
         </a>
       <!-- ENDIF topics.thumb -->

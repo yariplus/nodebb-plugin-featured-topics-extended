@@ -1,4 +1,6 @@
 $(() => {
+  config.fte = {}
+
   app.loadJQueryUI(() => {
     function openModal (theirid, lists) {
       const {tid, title} = ajaxify.data
@@ -50,8 +52,8 @@ $(() => {
     }
 
     function registerEventHandlers () {
-      $('.topic').on('click', '.thread-tools .mark-featured', () => {openTopicsListModal()})
-      $('[component="topic"]').on('click', '[component="mark-featured"]', () => {openTopicsListModal(app.user.uid)})
+      $('.topic').on('click', '.thread-tools .mark-featured', () => openTopicsListModal())
+      $('[component="topic"]').on('click', '[component="mark-featured"]', () => openTopicsListModal(app.user.uid))
     }
 
     $(window).on('action:ajaxify.end', registerEventHandlers)

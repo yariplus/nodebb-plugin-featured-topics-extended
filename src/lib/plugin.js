@@ -661,23 +661,35 @@ export function getWidgets (widgets, callback) {
   })
 }
 
+function renderWidgetTopics (template, data, widget, next) {
+  return (err, topics) => {
+    if (err) {
+      widget.html = ''
+      return next(null, widget)
+    }
+
+    data.topics = topics
+    data.config = {relative_path: nconf.get('relative_path')}
+
+    app.render(template, data, (err, html) => translator.translate(html, html => {
+      widget.html = html
+      next(err, widget)
+    }))
+  }
+}
+
 // Hook filter:widget.render:featuredTopicsExSidebar
 export function renderFeaturedTopicsSidebar (widget, next) {
   const {slug, sorted, max, sortby} = widget.data
   const {uid} = widget
+
+  const render = renderWidgetTopics('widgets/featured-topics-ex-sidebar', {}, widget, next)
 
   if (sorted) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
     getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
-  }
-
-  function render (err, topics) {
-    app.render('widgets/featured-topics-ex-sidebar', {topics}, (err, html) => translator.translate(html, html => {
-      widget.html = html
-      next(err, widget)
-    }))
   }
 }
 
@@ -686,18 +698,13 @@ export function renderFeaturedTopicsBlocks (widget, next) {
   const {slug, sorted, max, sortby} = widget.data
   const {uid} = widget
 
+  const render = renderWidgetTopics('widgets/featured-topics-ex-blocks', {}, widget, next)
+
   if (sorted) {
     const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
     getTopicsWithMainPost(uid, tids, render)
   } else {
     getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
-  }
-
-  function render (err, topics) {
-    app.render('widgets/featured-topics-ex-blocks', {topics}, (err, html) => translator.translate(html, html => {
-      widget.html = html
-      next(err, widget)
-    }))
   }
 }
 
@@ -706,14 +713,14 @@ export function renderFeaturedTopicsCards (widget, next) {
   const {slug, sorted, max, sortby} = widget.data
   const {uid} = widget
 
-  if (sorted) {
-    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
-    getTopicsWithMainPost(uid, tids, render)
-  } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
-  }
+  const render = renderWidgetTopics('widgets/featured-topics-ex-cards', {
+    backgroundSize: widget.data.backgroundSize || 'cover',
+    backgroundPosition: widget.data.backgroundPosition || 'center',
+    backgroundOpacity: widget.data.backgroundOpacity || '1.0',
+    textShadow: widget.data.textShadow || 'none',
+  }, widget, next)
 
-  function render (err, topics) {
+  const getPosts = (topics, next) => {
     async.each(topics, (topic, next) => {
       const {tid} = topic
 
@@ -721,17 +728,19 @@ export function renderFeaturedTopicsCards (widget, next) {
         topic.posts = posts
         next(err)
       })
-    }, err => {
-      widget.data.topics = topics
-      widget.data.backgroundSize = widget.data.backgroundSize || 'cover'
-      widget.data.backgroundPosition = widget.data.backgroundPosition || 'center'
-      widget.data.backgroundOpacity = widget.data.backgroundOpacity || '1.0'
-      widget.data.textShadow = widget.data.textShadow || 'none'
+    }, err => next(err, topics))
+  }
 
-      app.render('widgets/featured-topics-ex-cards', widget.data, (err, html) => translator.translate(html, html => {
-        widget.html = html
-        next(err, widget)
-      }))
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, (err, topics) => {
+      if (err) return render(err)
+      getPosts(topics, render)
+    })
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, (err, topics) => {
+      if (err) return render(err)
+      getPosts(topics, render)
     })
   }
 }
@@ -741,14 +750,9 @@ export function renderFeaturedTopicsList (widget, next) {
   const {slug, sorted, max, sortby} = widget.data
   const {uid} = widget
 
-  if (sorted) {
-    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
-    getTopicsWithMainPost(uid, tids, render)
-  } else {
-    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, render)
-  }
+  const render = renderWidgetTopics('widgets/featured-topics-ex-list', {}, widget, next)
 
-  function render (err, topics) {
+  const getPosts = (topics, next) => {
     async.each(topics, (topic, next) => {
       const {tid} = topic
 
@@ -756,10 +760,20 @@ export function renderFeaturedTopicsList (widget, next) {
         topic.posts = posts
         next(err)
       })
-    }, err => app.render('widgets/featured-topics-ex-list', {topics}, (err, html) => translator.translate(html, html => {
-      widget.html = html
-      next(err, widget)
-    })))
+    }, err => next(err, topics))
+  }
+
+  if (sorted) {
+    const tids = sorted.replace(/ /g, '').split(',').map(i => parseInt(i, 10))
+    getTopicsWithMainPost(uid, tids, (err, topics) => {
+      if (err) return render(err)
+      getPosts(topics, render)
+    })
+  } else {
+    getFeaturedTopicsBySlug(uid, 0, slug, 1, max, (err, topics) => {
+      if (err) return render(err)
+      getPosts(topics, render)
+    })
   }
 }
 
@@ -776,7 +790,7 @@ export function renderFeaturedTopicsNews (widget, next) {
   }
 
   function render (err, topics) {
-    parseFeaturedPageTopics(template, topics, 1, false, false, false, {}, (err, data) => {
+    parseFeaturedPageTopics(template, topics, 1, false, false, false, {config: {relative_path: nconf.get('relative_path')}}, (err, data) => {
       widget.html = data.featuredTemplate
       next(null, widget)
     })
