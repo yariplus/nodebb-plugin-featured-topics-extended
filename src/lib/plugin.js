@@ -17,15 +17,18 @@ const User  = require.main.require('./src/user')
 const SocketAdmin = require.main.require('./src/socket.io/admin')
 const SocketPlugins = require.main.require('./src/socket.io/plugins')
 const Utils = require.main.require('./public/src/utils')
+const Widgets  = require.main.require('./src/widgets')
 
 const defaultSettings = {
   newsTemplate: 'porta',
   newsHideAnon: 0,
-  customTemplate: ''
+  customTemplate: '',
 }
 
 let app, settings
 const GLOBALUID = 0
+
+let middleware
 
 // Hook static:app.load
 // Setup routes and settings.
@@ -34,12 +37,10 @@ export function init (params, next) {
   settings = new Settings('featured-topics-extended', '1.0.0', defaultSettings)
 
   const router = params.router
-  const middleware = params.middleware
+  middleware = params.middleware
 
   router.get('/news', middleware.buildHeader, renderNewsPage)
   router.get('/news/:page', middleware.buildHeader, renderNewsPage)
-  router.get('/api/news', renderNewsPage)
-  router.get('/api/news/:page', renderNewsPage)
   router.get('/api/news', renderNewsPage)
   router.get('/api/news/:page', renderNewsPage)
 
@@ -1009,16 +1010,30 @@ function renderNewsPage (req, res) {
   const page = req.params.page || 1
   const size = 5
   const slug = 'news'
+  const options = {
+    featuredRoute: `/news/`,
+  }
 
-  if (!uid && settings.get('newsHideAnon')) return res.render('news', {})
+  if (!uid && settings.get('newsHideAnon')) return res.render('news', {}) // We just render the blank page with widgets.
 
-  parseFeaturedPage(uid, GLOBALUID, slug, page, size, template, {
-      config: {
-        relative_path: nconf.get('relative_path')
-      },
-      featuredRoute: `/news/`
-    }, (err, data) => {
-    res.render('news', {...data})
+  // We need to pull the widget data to render widgets on the news template.
+  Widgets.render(req.uid, {
+    template: 'news.tpl',
+    url: req.url,
+    templateData: options,
+    req: req,
+    res: res,
+  }, (err, widgets) => {
+    if (err) {
+      console.log(err)
+      widgets = {}
+    }
+
+    parseFeaturedPage(uid, GLOBALUID, slug, page, size, template, {...options, widgets}, (err, data) => {
+      console.log('rendering news end')
+      data.template = {name: 'news', news: true}
+      res.render('news', data)
+    })
   })
 }
 

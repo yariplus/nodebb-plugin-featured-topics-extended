@@ -1,6 +1,6 @@
-<div class="fte-list-group">
-  <!-- IMPORT partials/fte-list-select.tpl -->
-</div>
+<input type="hidden" name="slug">
+
+<div class="fte-list-group"></div>
 
 <!-- IMPORT admin/widgets/fte-widget-sort.tpl -->
 

@@ -1,17 +1,31 @@
 (() => {
+
+  let $ListSelect
+
+  // Prepare the widget panel.
   function init (panel) {
     let group = panel.find('.fte-list-group')
 
+    // Return if there are no slugs or the list is already populated.
     if (!group.length) return
     if (group.find('option').length) return
 
-    app.parseAndTranslate('partials/fte-list-select', {lists: ajaxify.data.lists}, html => {
-      group.html(html)
-    })
+    group.append($ListSelect.clone())
 
+    let sel = panel.find('.fte-editor-list-select')
+    let slug = panel.find('[name="slug"]')
+
+    // Set the select option.
+    if (sel.find(`[value="${slug.val()}"]`).length) sel.val(slug.val())
+
+    // Change the list slug when the select changes.
+    sel.change(() => slug.val(sel.val()))
+
+    // TODO
     if (!!panel.find('[name="sorted"]').val()) $('.fte-topics-sort').text('Use All Topics')
   }
 
+  // TODO: Make this prettier.
   function resort (panel) {
     const slug = panel.find('.fte-editor-list-select').val()
 
@@ -51,9 +65,10 @@
 
   $(window).on('action:ajaxify.end', function (event, data) {
     if (data.url.match('admin/extend/widgets')) {
-      $('.widget-area').on('mouseup', '> .panel > .panel-heading', function () {
-        init($(this).parent())
-      })
+      // Populate the list select.
+      app.parseAndTranslate('partials/fte-list-select', { lists: ajaxify.data.lists }, html => $ListSelect = $(html))
+
+      $('.widget-area').on('mouseup', '> .panel > .panel-heading', function () { init($(this).parent()) })
 
       $('.widget-area').on('click', '.fte-topics-sort', function () {
         const panel = $(this).closest('.panel')
