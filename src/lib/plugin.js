@@ -1030,7 +1030,6 @@ function renderNewsPage (req, res) {
     }
 
     parseFeaturedPage(uid, GLOBALUID, slug, page, size, template, {...options, widgets}, (err, data) => {
-      console.log('rendering news end')
       data.template = {name: 'news', news: true}
       res.render('news', data)
     })
