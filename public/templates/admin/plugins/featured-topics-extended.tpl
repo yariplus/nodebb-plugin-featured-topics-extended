@@ -12,6 +12,12 @@
           <span class="mdl-switch__label"><strong>Hide news from guests.</strong></span>
         </label>
       </div>
+
+      <div class="form-group">
+        <label for="newsPageTitle">Page Title</label>
+        <input data-key="newsPageTitle" type="text" name="newsPageTitle" class="form-control">
+      </div>
+
       <div class="form-group">
         <label for="newsTemplate">Template</label>
         <select data-key="newsTemplate" name="newsTemplate" class="form-control">

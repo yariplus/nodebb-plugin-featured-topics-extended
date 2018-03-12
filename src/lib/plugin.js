@@ -20,6 +20,7 @@ const Utils = require.main.require('./public/src/utils')
 const Widgets  = require.main.require('./src/widgets')
 
 const defaultSettings = {
+  newsPageTitle: '',
   newsTemplate: 'porta',
   newsHideAnon: 0,
   customTemplate: '',
@@ -1031,6 +1032,8 @@ function renderNewsPage (req, res) {
 
     parseFeaturedPage(uid, GLOBALUID, slug, page, size, template, {...options, widgets}, (err, data) => {
       data.template = {name: 'news', news: true}
+      data.title = settings.get('newsPageTitle') || 'News' // TODO: Use translations
+
       res.render('news', data)
     })
   })
@@ -1053,6 +1056,8 @@ function renderBlogPage (req, res) {
       },
       featuredRoute: `/user/${userData.userslug}/${slug}/`
     }, (err, data) => {
+      data.title = 'Blog' // TODO: Use translations, add custom titles.
+
       res.render('account/fte-blog', {...data, ...userData})
     })
   })
