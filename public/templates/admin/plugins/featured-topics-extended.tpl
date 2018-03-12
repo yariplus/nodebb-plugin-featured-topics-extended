@@ -19,6 +19,11 @@
       </div>
 
       <div class="form-group">
+        <label for="newsPostCharLimit">Post Character Display Limit</label>
+        <input data-key="newsPostCharLimit" type="number" name="newsPostCharLimit" class="form-control" placeholder="unlimited">
+      </div>
+
+      <div class="form-group">
         <label for="newsTemplate">Template</label>
         <select data-key="newsTemplate" name="newsTemplate" class="form-control">
           <option value="porta" selected="selected">Porta</option>

@@ -21,6 +21,7 @@ const Widgets  = require.main.require('./src/widgets')
 
 const defaultSettings = {
   newsPageTitle: '',
+  newsPostCharLimit: 800,
   newsTemplate: 'porta',
   newsHideAnon: 0,
   customTemplate: '',
@@ -990,6 +991,15 @@ function parseFeaturedPage (uid, theirid, slug, page, size, template, data, next
 }
 
 function parseFeaturedPageTopics (template, topics, page, pages, nextpage, prevpage, data, next) {
+  let charLimit = parseInt(settings.get('newsPostCharLimit'), 10)
+
+  if (charLimit) {
+    topics.forEach(topic => {
+      topic.post.content = topic.post.content.slice(0, charLimit)
+      if (topic.post.content.length === charLimit) topic.post.content += '...'
+    })
+  }
+
   if (template !== 'custom') {
     app.render(`news-${template}`, {...data, topics, pages, nextpage, prevpage}, (err, html) => {
       translator.translate(html, featuredTemplate => {
