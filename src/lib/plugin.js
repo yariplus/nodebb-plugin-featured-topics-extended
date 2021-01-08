@@ -16,7 +16,7 @@ const Settings = require.main.require('./src/settings')
 const User  = require.main.require('./src/user')
 const SocketAdmin = require.main.require('./src/socket.io/admin')
 const SocketPlugins = require.main.require('./src/socket.io/plugins')
-const Utils = require.main.require('./public/src/utils')
+const Slugify = require.main.require('./src/slugify')
 const Widgets  = require.main.require('./src/widgets')
 
 const defaultSettings = {
@@ -306,7 +306,7 @@ export function homepageGet (data, next) {
 }
 
 function featureTopic (theirid, tid, slug, next) {
-  slug = Utils.slugify(slug)
+  slug = Slugify(slug)
 
   getListNameBySlug(theirid, slug, (err, list) => {
     if (err) return next(err)
@@ -332,7 +332,7 @@ function featureTopic (theirid, tid, slug, next) {
 }
 
 function unfeatureTopic (theirid, tid, slug, next) {
-  slug = Utils.slugify(slug)
+  slug = Slugify(slug)
 
   getListNameBySlug(theirid, slug, (err, list) => {
     if (err) return next(err)
@@ -452,7 +452,7 @@ function createDefaultFeaturedList (theirid, next) {
 function createList (theirid, list, next) {
   theirid = parseInt(theirid, 10) || 0
 
-  const slug = Utils.slugify(list)
+  const slug = Slugify(list)
   const created = Date.now()
 
   async.waterfall([
