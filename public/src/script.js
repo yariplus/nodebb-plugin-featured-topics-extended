@@ -7,37 +7,37 @@ $(() => {
 
       if (!tid) return console.log('No tid for featured topic modal.')
 
-      benchpress = require('benchpress')
+      const benchpress = require('benchpress')
 
-        bootbox.dialog({
-          size: 'large',
-          title: `Featuring topic: "${title}"`,
-          message: await benchpress.render('modals/fte-listselect', { lists, title }),
-          show: true,
-          onEscape: true,
-          buttons: {
-            'cancel': {
-              label: 'Cancel',
-              className: 'btn-primary',
-              callback: () => {}
-            },
-            'accept': {
-              label: 'Add Topic',
-              className: 'btn-default',
-              callback: () => {
-                socket.emit('plugins.FeaturedTopicsExtended.featureTopic', {
-                  tid,
-                  theirid,
-                  slug: $('#fte-topic-list-select').val()
-                }, err => {
-                  if (err) return app.alertError(err.message)
+      bootbox.dialog({
+        size: 'large',
+        title: `Featuring topic: "${title}"`,
+        message: await benchpress.render('modals/fte-listselect', { lists, title }),
+        show: true,
+        onEscape: true,
+        buttons: {
+          'cancel': {
+            label: 'Cancel',
+            className: 'btn-primary',
+            callback: () => {}
+          },
+          'accept': {
+            label: 'Add Topic',
+            className: 'btn-default',
+            callback: () => {
+              socket.emit('plugins.FeaturedTopicsExtended.featureTopic', {
+                tid,
+                theirid,
+                slug: $('#fte-topic-list-select').val()
+              }, err => {
+                if (err) return app.alertError(err.message)
 
-                  app.alertSuccess('Featured Topic')
-                })
-              }
+                app.alertSuccess('Featured Topic')
+              })
             }
           }
-        })
+        }
+      })
     }
 
     function openTopicsListModal (theirid) {
