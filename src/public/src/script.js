@@ -2,16 +2,17 @@ $(() => {
   config.fte = {}
 
   app.loadJQueryUI(() => {
-    function openModal (theirid, lists) {
+    async function openModal (theirid, lists) {
       const {tid, title} = ajaxify.data
 
       if (!tid) return console.log('No tid for featured topic modal.')
 
-      templates.parse('modals/fte-listselect', {lists, title}, (html) => {
+      benchpress = require('benchpress')
+
         bootbox.dialog({
           size: 'large',
           title: `Featuring topic: "${title}"`,
-          message: html,
+          message: await benchpress.render('modals/fte-listselect', { lists, title }),
           show: true,
           onEscape: true,
           buttons: {
@@ -37,7 +38,6 @@ $(() => {
             }
           }
         })
-      })
     }
 
     function openTopicsListModal (theirid) {
