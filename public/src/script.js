@@ -154,7 +154,7 @@ $(() => {
 
         socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
           if (err) return app.alertError(err.message)
-          if (!data || !data.topics || !data.topics.length) return
+          if (!data || !data.topics) return
 
           app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
             $('.fte-topic-list').html(html)
