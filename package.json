@@ -2,7 +2,7 @@
   "name": "nodebb-plugin-featured-topics-extended",
   "version": "0.4.3",
   "description": "Adds a customisable news/blog page and some widgets using featured topics.",
-  "license": "(CC0-1.0 OR MIT)",
+  "license": "MIT-0",
   "main": "./lib/plugin.js",
   "repository": "yariplus/nodebb-plugin-featured-topics-extended",
   "homepage": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended",
