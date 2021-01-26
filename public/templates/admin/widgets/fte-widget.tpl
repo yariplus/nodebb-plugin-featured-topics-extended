@@ -1,4 +1,4 @@
-<input type="hidden" name="slug">
+<input type="hidden" name="slug" value="news">
 
 <div class="fte-list-group"></div>
 
