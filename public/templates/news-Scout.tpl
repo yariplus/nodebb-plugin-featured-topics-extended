@@ -2,7 +2,7 @@
 <br>
 <!-- BEGIN topics -->
 <div class="col-xs-6 col-sm-4" tid="{topics.tid}" class="post-holder">
-  <a href="/topic/{topics.slug}" class="post-box" style="min-height: 340px;">
+  <a href="{config.relative_path}/topic/{topics.slug}" class="post-box" style="min-height: 340px;">
     <figure style="background: {topics.user.icon:bgColor}
       <!-- IF topics.imageurl -->
         url({topics.imageurl})
