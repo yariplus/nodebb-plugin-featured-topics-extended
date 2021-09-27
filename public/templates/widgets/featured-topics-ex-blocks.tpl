@@ -6,23 +6,27 @@
 
       <div class="ftx-block-inner">
         <div class="ftx-block-card">
-          <a href="{config.relative_path}/topic/{topics.slug}"><div class="ftx-block-card-bg" style="
-            background-size: {backgroundSize};
-            background-position: {backgroundPosition};
-            color: {topics.category.color};
-            opacity: {backgroundOpacity};
-            <!-- IF topics.thumb -->background-image: url({topics.thumb});<!-- ELSE -->
-              <!-- IF topics.category.backgroundImage -->background-image: url({topics.category.backgroundImage});<!-- ENDIF topics.category.backgroundImage -->
-            <!-- ENDIF topics.thumb -->
+          <a href="{config.relative_path}/topic/{topics.slug}" style="display:block;">
+            <div class="ftx-block-card-bg" style="
+              background-size: {backgroundSize};
+              background-position: {backgroundPosition};
+              color: {topics.category.color};
+              opacity: {backgroundOpacity};
+              <!-- IF topics.thumb -->background-image: url({topics.thumb});<!-- ELSE -->
+                <!-- IF topics.category.backgroundImage -->background-image: url({topics.category.backgroundImage});<!-- ENDIF topics.category.backgroundImage -->
+              <!-- ENDIF topics.thumb -->
             <!-- IF topics.category.bgColor -->background-color: {topics.category.bgColor};<!-- ENDIF topics.category.bgColor -->
-          "></div></a>
+            "></div>
+          </a>
           <div class="ftx-block-card-inner">
-            <div class="category-info" style="color: {topics.category.color};">
+            <div class="topic-info" style="color: {topics.category.color};">
+              <!-- IF topics.thumbs.id -->22222<!-- ENDIF topics.thumbs.id -->
               <!-- IF topics.category.icon --><i class="fa {topics.category.icon} fa-4x"></i><!-- ENDIF topics.category.icon -->
             </div>
-            <span class="badge unread">
-              <i class="fa fa-book" data-toggle="tooltip" title="Topics"></i> <span class="human-readable-number" title="9">9</span>&nbsp;
-              <i class="fa fa-pencil" data-toggle="tooltip" title="Posts"></i> <span class="human-readable-number" title="166">166</span>
+            <span class="badge" style="display:none;">
+              <i class="fa fa-chevron-up" data-toggle="tooltip" title="Upvotes"></i> <span class="human-readable-number" title="{topics.votes}"></span>&nbsp;
+              <i class="fa fa-pencil" data-toggle="tooltip" title="Posts"></i> <span class="human-readable-number" title=""></span>&nbsp;
+              <i class="fa fa-eye" data-toggle="tooltip" title="Views"></i> <span class="human-readable-number" title=""></span>
             </span>
           </div>
         </div>

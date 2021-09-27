@@ -58,7 +58,10 @@
   </div>
 
   <!-- IF !@last -->
-  <div widget-area="contentbetween"><!-- BEGIN widgets.contentbetween -->{widgets.contentbetween.html}<!-- END widgets.contentbetween --></div>
+  <div widget-area="contentbetween">
+    {{{each widgets.contentbetween}}}
+    {{widgets.contentbetween.html}}
+    {{{end}}}</div>
   <!-- ENDIF !@last -->
 
   <!-- END topics -->
