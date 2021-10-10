@@ -16,7 +16,7 @@
     "topics"
   ],
   "nbbpm": {
-    "compatibility": "^1.15.0 || ^1.16.0"
+    "compatibility": ">=1.15.0"
   },
   "dependencies": {
     "async": "^3.2.0",
