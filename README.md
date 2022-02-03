@@ -23,7 +23,7 @@ Lists are managed on the `/featured` page.
 
 ##### News Page
 
-The topics featured in the default `News` list are automatically displayed on the `/user/<user>/blog` page.
+The topics featured in the default `News` list are automatically displayed on the `/news` page.
 
 The style of the news page is very customisable from within the ACP settings page. You can also select from a list of styles that mimic popular blogging sites.
 
