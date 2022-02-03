@@ -7,6 +7,26 @@
   "repository": "yariplus/nodebb-plugin-featured-topics-extended",
   "homepage": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended",
   "bugs": "https://github.com/yariplus/nodebb-plugin-featured-topics-extended/issues",
+  "author": "yariplus <tafike@gmail.com>",
+  "contributors": [
+    "ornithes",
+    "vyprik",
+    "AGraber",
+    "expressadapter",
+    "saesrpg",
+    "DeusProx",
+    "gdude2002",
+    "exomarty",
+    "evoixmr",
+    "GitPuffy",
+    "artch",
+    "jffz",
+    "alfazaz",
+    "AlanJinqs",
+    "Ashk2a",
+    "uyiyei",
+    "charizzrd"
+  ],
   "keywords": [
     "nodebb",
     "plugin",
@@ -16,10 +36,9 @@
     "topics"
   ],
   "nbbpm": {
-    "compatibility": "^1.16.0 || ^1.17.0 || ^1.18.0"
+    "compatibility": "^1.16.0 || ^1.17.0 || ^1.18.0 || ^1.19.0"
   },
   "dependencies": {
-    "async": "^3.2.0",
     "text-clipper": "^2.1.0"
   },
   "devDependencies": {
