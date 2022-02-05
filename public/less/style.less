@@ -194,6 +194,62 @@
   }
 }
 
+.fte-theme-scout {
+  .scout-container {
+    display: block;
+    overflow: hidden;
+    border-radius: 0 0 8px 8px;
+    border-color: #efefef;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #fefefe;
+    margin-bottom: 36px;
+
+    .scout-figure {
+      aspect-ratio: 16 / 9;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .scout-text {
+      padding: 4px;
+      height: 80px;
+      max-height: 80px;
+      overflow: hidden;
+      text-align: center;
+
+      .scout-category {
+        font-size: 14px;
+        display: block;
+        color: #363636;
+      }
+
+      .scout-title {
+        font-size: 16px;
+        color: #333;
+        display: block;
+        max-height: 48px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+@supports not (aspect-ratio: 16 / 9) {
+  .scout-figure::before {
+    float: left;
+    padding-top: 56.25%;
+    content: "";
+  }
+
+  .scout-figure::after {
+    display: block;
+    content: "";
+    clear: both;
+  }
+}
+
 [data-widget="featuredTopicsExSidebar"] {
   overflow-y: hidden;
   overflow-x: hidden;
