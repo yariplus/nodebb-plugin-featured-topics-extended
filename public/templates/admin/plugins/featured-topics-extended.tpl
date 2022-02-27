@@ -24,6 +24,15 @@
       </div>
 
       <div class="form-group">
+        <label for="newsPartitioning">Partitioning</label>
+        <select data-key="newsPartitioning" name="newsPartitioning" class="form-control">
+          <option value="pagination" selected="selected">Pagination</option>
+          <option value="carousel">Carousel</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label for="newsTemplate">Template</label>
         <select data-key="newsTemplate" name="newsTemplate" class="form-control">
           <option value="porta" selected="selected">Porta</option>

@@ -8,3 +8,8 @@
   <label>Max Topics</label>
   <input class="form-control" type="text" name="max"/>
 </div>
+
+<div class="form-group">
+  <label>Carousel</label>
+  <input class="form-control" type="text" name="carousel"/>
+</div>

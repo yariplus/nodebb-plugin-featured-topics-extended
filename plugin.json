@@ -28,7 +28,8 @@
   },
   "templates": "./public/templates",
   "less": [
-    "./public/less/style.less"
+    "./public/less/style.less",
+    "./public/less/glide.less"
   ],
   "scripts": [
     "./public/src/script.js"
