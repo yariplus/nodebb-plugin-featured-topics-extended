@@ -32,7 +32,14 @@
 }
 
 .glide__slide {
-  width: 33.333333%;
+  width: 100%;
+  @media (min-width: 576px) {
+    width: 50%;
+  }
+  @media (min-width: 768px) {
+    width: 33.333333%;
+  }
+
   padding-left: 15px;
   padding-right: 15px;
   flex-shrink: 0;
@@ -91,10 +98,10 @@
 }
 
 .glide__arrow--prev {
-  left: -16px;
+  left: 15px;
 }
 .glide__arrow--next {
-  right: -16px;
+  right: 15px;
 }
 
 .glide__arrow--disabled {

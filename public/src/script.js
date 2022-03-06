@@ -69,7 +69,8 @@ $(() => {
                 focusAt: 1
               },
               576: {
-                perView: 1
+                perView: 1,
+                focusAt: 1
               }
             }
           })
