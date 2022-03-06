@@ -55,23 +55,27 @@ $(() => {
       $('.topic').on('click', '.thread-tools .mark-featured', () => openTopicsListModal())
       $('[component="topic"]').on('click', '[component="mark-featured"]', () => openTopicsListModal(app.user.uid))
 
-      $('.carousel').each((i, el) => {
-        var glide = new Glide(el, {
-          type: 'carousel',
-          perView: 3,
-          focusAt: 'center',
-          breakpoints: {
-            768: {
-              perView: 2,
-              focusAt: 1
-            },
-            576: {
-              perView: 1
+      $('.glide').each((i, el) => {
+        require(['glide'], (Glide) => {
+          var glide = new Glide(el, {
+            type: 'carousel',
+            gap: 0,
+            perView: 3,
+            startAt: 1,
+            focusAt: 'center',
+            breakpoints: {
+              768: {
+                perView: 2,
+                focusAt: 1
+              },
+              576: {
+                perView: 1
+              }
             }
-          }
-        })
+          })
 
-        glide.mount()
+          glide.mount()
+        })
       })
     }
 

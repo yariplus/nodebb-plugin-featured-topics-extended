@@ -1,6 +1,6 @@
 .glide {
   position: relative;
-  
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -13,7 +13,8 @@
 }
 
 .glide__slides {
-  position: relative; 
+  position: relative;
+  width: 100%;
   list-style: none;
   backface-visibility: hidden;
   transform-style: preserve-3d;
@@ -21,6 +22,8 @@
   overflow: hidden;
   padding: 0;
   white-space: nowrap;
+  display: flex;
+  flex-wrap: nowrap;
   will-change: transform;
 }
 
@@ -29,7 +32,9 @@
 }
 
 .glide__slide {
-  height: 100%;
+  width: 33.333333%;
+  padding-left: 15px;
+  padding-right: 15px;
   flex-shrink: 0;
   white-space: initial;
   user-select: none;
@@ -48,10 +53,12 @@
   -webkit-touch-callout: none;
   user-select: none;
 }
+
 .glide__bullets {
   -webkit-touch-callout: none;
   user-select: none;
 }
+
 .glide--rtl {
   direction: rtl;
 }

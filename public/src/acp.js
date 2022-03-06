@@ -73,12 +73,7 @@
       $('.widget-area').on('click', '.fte-topics-sort', function () {
         const panel = $(this).closest('.panel')
 
-        if (panel.find('[name="sorted"]').val()) {
-          panel.find('[name="sorted"]').val('')
-          panel.find('.fte-topics-sort').text('Use Specific Topics')
-        } else {
-          resort(panel)
-        }
+        resort(panel)
       })
     }
   })

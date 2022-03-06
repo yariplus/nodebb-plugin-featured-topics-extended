@@ -37,6 +37,9 @@
   "acpScripts": [
     "./public/src/acp.js"
   ],
+  "modules": [
+    "./public/src/glide.js"
+  ],
   "languages": "public/language",
   "defaultLang": "en_GB"
 }
