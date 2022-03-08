@@ -22,7 +22,7 @@
     sel.change(() => slug.val(sel.val()))
 
     // TODO
-    if (!!panel.find('[name="sorted"]').val()) $('.fte-topics-sort').text('Use All Topics')
+    // if (!!panel.find('[name="sorted"]').val()) $('.fte-topics-sort').text('Use All Topics')
   }
 
   // TODO: Make this prettier.
@@ -48,7 +48,6 @@
               tids = tids.join(',')
 
               panel.find('[name="sorted"]').val(tids)
-              panel.find('.fte-topics-sort').text('Use All Topics')
             }
           }).on("shown.bs.modal", function () {
             $('span.timeago').timeago()
