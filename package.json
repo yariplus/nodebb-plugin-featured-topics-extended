@@ -39,6 +39,7 @@
     "compatibility": "^1.16.0 || ^1.17.0 || ^1.18.0 || ^1.19.0"
   },
   "dependencies": {
+    "@glidejs/glide": "^3.5.2",
     "text-clipper": "^2.1.0"
   },
   "devDependencies": {

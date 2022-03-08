@@ -23,9 +23,6 @@
     { "hook": "filter:user.profileMenu", "method": "userProfileMenu" },
     { "hook": "filter:admin/extend/widgets.build", "method": "buildWidgets" }
   ],
-  "staticDirs": {
-    "public": "public"
-  },
   "templates": "./public/templates",
   "less": [
     "./public/less/style.less",
@@ -37,9 +34,9 @@
   "acpScripts": [
     "./public/src/acp.js"
   ],
-  "modules": [
-    "./public/src/glide.js"
-  ],
+  "modules": {
+    "glide.js": "node_modules/@glidejs/glide/dist/glide.min.js"
+  },
   "languages": "public/language",
   "defaultLang": "en_GB"
 }

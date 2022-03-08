@@ -24,21 +24,19 @@
       </div>
 
       <div class="form-group">
-        <label for="newsPartitioning">Partitioning</label>
-        <select data-key="newsPartitioning" name="newsPartitioning" class="form-control">
-          <option value="pagination" selected="selected">Pagination</option>
-          <option value="carousel">Carousel</option>
-          <option value="none">None</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="newsTemplate">Template</label>
+        <label for="newsTemplate">Style</label>
         <select data-key="newsTemplate" name="newsTemplate" class="form-control">
           <option value="porta" selected="selected">Porta</option>
           <option value="Scout">Scout</option>
           <option value="custom">Custom</option>
         </select>
+      </div>
+
+      <div class="checkbox">
+        <label for="carousel" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+          <input id="carousel" class="mdl-switch__input" type="checkbox" data-key="carousel">
+          <span class="mdl-switch__label"><strong>Carsousel Mode</strong> <small>(Not supported by all styles.)</span>
+        </label>
       </div>
 
       <div class="panel panel-warning">
