@@ -55,23 +55,25 @@
 </form>
 
 <script>
-require(['settings'], function(settings) {
+// TODO: Remove inline script.
+$(async () => {
+  let settings = await app.require('settings')
 
   settings.sync('featured-topics-extended', $('#fte-admin-page'), function () {
-    var templateEditor = ace.edit("template-editor");
-    templateEditor.setTheme("ace/theme/twilight");
-    templateEditor.getSession().setMode("ace/mode/html");
-    templateEditor.setValue($('[data-key="customTemplate"]').val());
+    var templateEditor = ace.edit("template-editor")
+    templateEditor.setTheme("ace/theme/twilight")
+    templateEditor.getSession().setMode("ace/mode/html")
+    templateEditor.setValue($('[data-key="customTemplate"]').val())
 
     templateEditor.on('change', function(e) {
-      $('[data-key="customTemplate"]').val(templateEditor.getValue());
-    });
-  });
+      $('[data-key="customTemplate"]').val(templateEditor.getValue())
+    })
+  })
 
   $('#save').click( function (event) {
     settings.persist('featured-topics-extended', $('#fte-admin-page'), function(){
-      socket.emit('admin.settings.syncFeaturedTopicsExtended');
-    });
-  });
-});
+      socket.emit('admin.settings.syncFeaturedTopicsExtended')
+    })
+  })
+})
 </script>
