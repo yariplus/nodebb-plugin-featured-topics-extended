@@ -7,12 +7,12 @@ $(() => {
 
       if (!tid) return console.log('No tid for featured topic modal.')
 
-      const benchpress = await app.require('benchpress')
+      const Bootbox = await require('bootbox')
 
-      bootbox.dialog({
+      Bootbox.dialog({
         size: 'large',
         title: `Featuring topic: "${title}"`,
-        message: await benchpress.render('modals/fte-listselect', { lists, title }),
+        message: await app.parseAndTranslate('modals/fte-listselect', { lists, title }),
         show: true,
         onEscape: true,
         buttons: {
@@ -56,7 +56,7 @@ $(() => {
       $('[component="topic"]').on('click', '[component="mark-featured"]', () => openTopicsListModal(app.user.uid))
 
       $('.glide').each(async (i, el) => {
-        const Glide = await app.require('glide')
+        const Glide = await require('glide')
 
         let glide = new Glide(el, {
           type: 'carousel',
