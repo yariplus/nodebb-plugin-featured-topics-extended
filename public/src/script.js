@@ -51,7 +51,13 @@ $(() => {
       })
     }
 
-    function registerEventHandlers () {
+    async function registerEventHandlers () {
+      const Masonry = await require('masonry')
+
+      $('.grid').each(async (i, el) => {
+        new Masonry(el)
+      })
+
       $('.topic').on('click', '.thread-tools .mark-featured', () => openTopicsListModal())
       $('[component="topic"]').on('click', '[component="mark-featured"]', () => openTopicsListModal(app.user.uid))
 

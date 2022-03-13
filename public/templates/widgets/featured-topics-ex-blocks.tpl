@@ -1,7 +1,7 @@
-<div data-widget="featuredTopicsExBlocks">
-  <div class="row" itemscope itemtype="http://www.schema.org/ItemList">
+<div data-widget="featuredTopicsExBlocks" data-fte-widget="{fteWidget}">
+  <div class="row grid" itemscope itemtype="http://www.schema.org/ItemList">
     <!-- BEGIN topics -->
-    <div class="col-md-3 col-sm-12 ftx-block-item" data-tid="{topics.tid}">
+    <div class="grid-item col-lg-3 col-md-6 col-sm-12 ftx-block-item" data-tid="{topics.tid}">
       <meta itemprop="name" content="{topics.title}">
 
       <div class="ftx-block-inner">

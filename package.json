@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@glidejs/glide": "^3.5.2",
+    "masonry-layout": "^4.2.2",
     "text-clipper": "^2.1.0"
   },
   "devDependencies": {
