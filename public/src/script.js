@@ -52,7 +52,7 @@ $(() => {
     }
 
     async function registerEventHandlers () {
-      const Masonry = await require('masonry')
+      const Masonry = await app.require('masonry')
 
       $('.grid').each(async (i, el) => {
         new Masonry(el)
@@ -62,7 +62,7 @@ $(() => {
       $('[component="topic"]').on('click', '[component="mark-featured"]', () => openTopicsListModal(app.user.uid))
 
       $('.glide').each(async (i, el) => {
-        const Glide = await require('glide')
+        const Glide = await app.require('glide')
 
         let glide = new Glide(el, {
           type: 'carousel',
