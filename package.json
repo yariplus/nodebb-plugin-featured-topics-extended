@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-featured-topics-extended",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Adds a customisable news/blog page and some widgets using featured topics.",
   "license": "MIT-0",
   "main": "./lib/plugin.js",
@@ -36,7 +36,7 @@
     "topics"
   ],
   "nbbpm": {
-    "compatibility": "^1.16.0 || ^1.17.0 || ^1.18.0 || ^1.19.0"
+    "compatibility": "^1.19.0 || ^2.0.0"
   },
   "dependencies": {
     "@glidejs/glide": "^3.5.2",
