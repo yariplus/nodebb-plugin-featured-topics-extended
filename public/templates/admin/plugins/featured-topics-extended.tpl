@@ -35,7 +35,7 @@
       <div class="checkbox">
         <label for="carousel" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
           <input id="carousel" class="mdl-switch__input" type="checkbox" data-key="carousel">
-          <span class="mdl-switch__label"><strong>Carsousel Mode</strong> <small>(Not supported by all styles.)</span>
+          <span class="mdl-switch__label"><strong>Carsousel Mode</strong> <small>(Not supported by all styles.)</small></span>
         </label>
       </div>
 
@@ -45,35 +45,12 @@
         </div>
         <div class="panel-body collapse themes">
           <div id="template-editor" class="fte-ace"></div>
-          <textarea data-key="customTemplate" style="display:none;"></textarea>
         </div>
       </div>
     </div>
   </div>
 
+  <textarea data-key="customTemplate" style="display:none;"></textarea>
+
   <button type="button" id="save" class="floating-button mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><i class="material-icons">save</i></button>
 </form>
-
-<script>
-// TODO: Remove inline script.
-$(async () => {
-  let settings = await app.require('settings')
-
-  settings.sync('featured-topics-extended', $('#fte-admin-page'), function () {
-    var templateEditor = ace.edit("template-editor")
-    templateEditor.setTheme("ace/theme/twilight")
-    templateEditor.getSession().setMode("ace/mode/html")
-    templateEditor.setValue($('[data-key="customTemplate"]').val())
-
-    templateEditor.on('change', function(e) {
-      $('[data-key="customTemplate"]').val(templateEditor.getValue())
-    })
-  })
-
-  $('#save').click( function (event) {
-    settings.persist('featured-topics-extended', $('#fte-admin-page'), function(){
-      socket.emit('admin.settings.syncFeaturedTopicsExtended')
-    })
-  })
-})
-</script>

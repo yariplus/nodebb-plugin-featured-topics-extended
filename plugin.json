@@ -36,8 +36,9 @@
     "./public/src/acp.js"
   ],
   "modules": {
-    "glide.js": "node_modules/@glidejs/glide/dist/glide.min.js",
-    "masonry.js": "node_modules/masonry-layout/dist/masonry.pkgd.min.js"
+    "glide.js": "../@glidejs/glide/dist/glide.min.js",
+    "masonry.js": "../masonry-layout/dist/masonry.pkgd.min.js",
+    "../admin/plugins/featured-topics-extended.js": "./public/src/featured-topics-extended-admin.js"
   },
   "languages": "public/language",
   "defaultLang": "en_GB"
