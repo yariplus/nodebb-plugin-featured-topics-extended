@@ -36,7 +36,7 @@
     "topics"
   ],
   "nbbpm": {
-    "compatibility": "^2.0.0"
+    "compatibility": "^1.19.0 || ^2.0.0"
   },
   "dependencies": {
     "@glidejs/glide": "^3.5.2",
