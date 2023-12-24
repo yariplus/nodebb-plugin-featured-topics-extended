@@ -2,7 +2,6 @@
   "id": "nodebb-plugin-featured-topics-extended",
   "name": "Featured Topics Extended",
   "description": "Adds a customisable news/blog page and some widgets using featured topics.",
-  "library": "./lib/plugin.js",
   "hooks": [
     { "hook": "static:app.load",                "method": "init"        },
     { "hook": "filter:homepage.get",            "method": "homepageGet" },
