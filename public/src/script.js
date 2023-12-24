@@ -1,5 +1,7 @@
 $(window).on('action:ajaxify.end', async () => {
+  const Bootbox = await require('bootbox')
   const Masonry = await app.require('masonry')
+  const alerts = await require('alerts')
 
   $('.grid').each(async (i, el) => {
     new Masonry(el)
@@ -33,11 +35,11 @@ $(window).on('action:ajaxify.end', async () => {
   })
 
   function openTopicsListModal (theirid) {
-    if ($('#featured-topics-ex-modal').length) return app.alertError('Already editing featured topics.')
+    if ($('#featured-topics-ex-modal').length) return alerts.error('Already editing featured topics.')
 
     socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopicsLists', {theirid}, (err, lists) => {
-      if (err) return app.alertError(err.message)
-      if (!lists || !lists.length) return app.alertError('Unable to get featured topic lists.')
+      if (err) return alerts.error(err.message)
+      if (!lists || !lists.length) return alerts.error('Unable to get featured topic lists.')
 
       openModal(theirid, lists)
     })
@@ -48,8 +50,6 @@ $(window).on('action:ajaxify.end', async () => {
       const {tid, title} = ajaxify.data
 
       if (!tid) return console.log('No tid for featured topic modal.')
-
-      const Bootbox = await require('bootbox')
 
       Bootbox.dialog({
         size: 'large',
@@ -72,9 +72,9 @@ $(window).on('action:ajaxify.end', async () => {
                 theirid,
                 slug: $('#fte-topic-list-select').val()
               }, err => {
-                if (err) return app.alertError(err.message)
+                if (err) return alerts.error(err.message)
 
-                app.alertSuccess('Featured Topic')
+                alerts.success('Featured Topic')
               })
             }
           }
