@@ -1,4 +1,4 @@
-define('forum/fte-featured', function () {
+define('forum/fte-featured', ['alerts', 'bootbox'], function (alerts, bootbox) {
 	let fte = {}
 
   fte.setupEditor = (theirid) => {
@@ -8,9 +8,9 @@ define('forum/fte-featured', function () {
 
         socket.emit('plugins.FeaturedTopicsExtended.createList', {theirid, list}, err => {
           if (err) {
-            app.alertError(err.message)
+            alerts.error(err.message)
           } else {
-            app.alertSuccess(`Created list <b>${list}</b>!`)
+            alerts.success(`Created list <b>${list}</b>!`)
             $('.fte-editor-list-select').append(`<option value="${list}">${list}</option>`)
           }
         })
@@ -21,15 +21,15 @@ define('forum/fte-featured', function () {
       const slug = $('.fte-editor-list-select').val()
       const list = $(`option[value="${slug}"]`).text()
 
-      if (slug === 'news' || slug === 'blog') return app.alertError(`Cannot delete list ${list}.`)
+      if (slug === 'news' || slug === 'blog') return alerts.error(`Cannot delete list ${list}.`)
 
       bootbox.confirm(`Are you sure you want to delete the list <b>${list}</b>?`, confirm => {
         if (!confirm) return
 
         socket.emit('plugins.FeaturedTopicsExtended.deleteList', {theirid, slug}, err => {
-          if (err) return app.alertError(err.message)
+          if (err) return alerts.error(err.message)
 
-          app.alertSuccess(`Deleted list <b>${list}</b>!`)
+          alerts.success(`Deleted list <b>${list}</b>!`)
 
           $(`.fte-editor-list-select [value="${slug}"]`).remove()
           $(`.fte-editor-list-select`).val($(`.fte-editor-list-select option`).first().val())
@@ -43,7 +43,7 @@ define('forum/fte-featured', function () {
       const page = 1
 
       socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
-        if (err) return app.alertError(err.message)
+        if (err) return alerts.error(err.message)
 
         app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
           $('.fte-topic-list').html(html)
@@ -59,9 +59,9 @@ define('forum/fte-featured', function () {
       const slug = $('.fte-editor-list-select').val()
 
       socket.emit('plugins.FeaturedTopicsExtended.setAutoFeature', {theirid, slug, autoFeature}, (err, data) => {
-        if (err) return app.alertError(err.message)
+        if (err) return alerts.error(err.message)
 
-        app.alertSuccess('Save auto feature')
+        alerts.success('Save auto feature')
       })
     })
 
@@ -71,14 +71,14 @@ define('forum/fte-featured', function () {
       const row = $(this).closest('tr')
 
       socket.emit('plugins.FeaturedTopicsExtended.unfeatureTopic', {theirid, slug, tid}, (err, data) => {
-        if (err) return app.alertError(err.message)
+        if (err) return alerts.error(err.message)
 
-        app.alertSuccess('Unfeatured topic')
+        alerts.success('Unfeatured topic')
 
         const page = $('.fte-topic-list').data('page')
 
         socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
-          if (err) return app.alertError(err.message)
+          if (err) return alerts.error(err.message)
           if (!data || !data.topics) return
 
           app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
@@ -96,7 +96,7 @@ define('forum/fte-featured', function () {
       const slug = $('.fte-editor-list-select').val()
 
       socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
-        if (err) return app.alertError(err.message)
+        if (err) return alerts.error(err.message)
         if (!data || !data.topics || !data.topics.length) return
 
         app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
@@ -113,7 +113,7 @@ define('forum/fte-featured', function () {
       const slug = $('.fte-editor-list-select').val()
 
       socket.emit('plugins.FeaturedTopicsExtended.getFeaturedTopics', {theirid, slug, page}, (err, data) => {
-        if (err) return app.alertError(err.message)
+        if (err) return alerts.error(err.message)
         if (!data || !data.topics || !data.topics.length) return
 
         app.parseAndTranslate('partials/fte-topic-list', {topics: data.topics, isSelf: ajaxify.data.isSelf}, html => {
@@ -124,7 +124,7 @@ define('forum/fte-featured', function () {
     })
 
     $('.fte-editor-list-select').val($('.fte-editor-list-select [selected]').val())
-    $('#fte-editor-list-autofeature').val(ajaxify.data.list.autoFeature.join(','))
+    //$('#fte-editor-list-autofeature').val(ajaxify.data.list.autoFeature.join(','))
     $('.fte-topic-list').data('page', 1)
   }
 
