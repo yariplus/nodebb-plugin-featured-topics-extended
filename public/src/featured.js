@@ -129,9 +129,11 @@ define('forum/fte-featured', ['alerts', 'bootbox'], function (alerts, bootbox) {
   }
 
 	fte.init = function () {
-    console.log('featured.js loaded!')
-    
-    fte.setupEditor()
+    console.debug.apply(console, ['featured.js loaded!'])
+
+    console.debug.apply(console, ['Loaded featured list:', ajaxify.data.theirid ? ajaxify.data.theirid : "Admin Lists"])
+
+    fte.setupEditor(ajaxify.data.theirid)
 	}
 
 	return fte
