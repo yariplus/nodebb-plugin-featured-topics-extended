@@ -38,6 +38,7 @@
     "glide.js": "../@glidejs/glide/dist/glide.min.js",
     "masonry.js": "../masonry-layout/dist/masonry.pkgd.min.js",
     "../admin/plugins/featured-topics-extended.js": "./public/src/featured-topics-extended-admin.js",
+    "../client/news.js": "./public/src/news.js",
     "../client/fte-featured.js": "./public/src/featured.js",
     "../client/account/fte-featured.js": "./public/src/featured.js",
     "../client/account/fte-blog.js": "./public/src/featured.js"
