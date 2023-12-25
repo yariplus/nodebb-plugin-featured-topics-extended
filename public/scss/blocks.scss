@@ -33,7 +33,11 @@
         position: relative;
 
         .ftx-block-card-inner {
-          .ftx-block-card-bg;
+          position: absolute;
+          width: 100%;
+          height: 110px;
+          top: 0;
+          left: 0;
 
           padding: 24px;
           text-align: center;
@@ -88,10 +92,6 @@
     .category-box {
       position: relative;
       background: #fff;
-
-      @media (min-width: @screen-md-min) {
-
-      }
 
       min-height: 30px;
       margin-top: -10px;
@@ -180,7 +180,7 @@
     }
 
     .teaser-pic, .teaser-pic.user-icon {
-      .user-icon-style(20px, 1.3rem);
+      @include user-icon-style(20px, 1.3rem);
     }
   }
 }

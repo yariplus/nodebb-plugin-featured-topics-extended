@@ -250,20 +250,6 @@
   }
 }
 
-@supports not (aspect-ratio: 16 / 9) {
-  .scout-figure::before {
-    float: left;
-    padding-top: 56.25%;
-    content: "";
-  }
-
-  .scout-figure::after {
-    display: block;
-    content: "";
-    clear: both;
-  }
-}
-
 [data-widget="featuredTopicsExSidebar"] {
   overflow-y: hidden;
   overflow-x: hidden;
@@ -383,7 +369,7 @@
   padding: 0;
 
   .recent-card {
-    .pointer;
+    @include pointer;
     height: 110px;
     width: 100%;
     padding: 10px;

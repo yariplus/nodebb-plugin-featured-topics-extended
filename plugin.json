@@ -23,10 +23,10 @@
     { "hook": "filter:admin/extend/widgets.build", "method": "buildWidgets" }
   ],
   "templates": "./public/templates",
-  "less": [
-    "./public/less/style.less",
-    "./public/less/blocks.less",
-    "./public/less/glide.less"
+  "scss": [
+    "./public/scss/style.scss",
+    "./public/scss/blocks.scss",
+    "./public/scss/glide.scss"
   ],
   "scripts": [
     "./public/src/script.js"
