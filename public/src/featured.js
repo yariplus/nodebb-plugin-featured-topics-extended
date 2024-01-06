@@ -124,7 +124,7 @@ define('forum/fte-featured', ['alerts', 'bootbox'], function (alerts, bootbox) {
     })
 
     $('.fte-editor-list-select').val($('.fte-editor-list-select [selected]').val())
-    //$('#fte-editor-list-autofeature').val(ajaxify.data.list.autoFeature.join(','))
+    $('#fte-editor-list-autofeature').val(ajaxify.data.lists[0].autoFeature.join(','))
     $('.fte-topic-list').data('page', 1)
   }
 
